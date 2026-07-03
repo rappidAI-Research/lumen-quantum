@@ -1,9 +1,7 @@
-from pathlib import Path
-
 from scripts.train_tokenizer import DEFAULT_SPECIAL_TOKENS, load_fast_tokenizer, train_tokenizer
 
 
-def test_train_and_load_tokenizer_with_german_umlauts(tmp_path):
+def test_train_and_load_sentencepiece_tokenizer_with_german_umlauts(tmp_path):
     raw_dir = tmp_path / "raw"
     tokenizer_dir = tmp_path / "tokenizer"
     raw_dir.mkdir()
@@ -23,7 +21,12 @@ def test_train_and_load_tokenizer_with_german_umlauts(tmp_path):
     )
     loaded = load_fast_tokenizer(tokenizer_dir, DEFAULT_SPECIAL_TOKENS)
 
+    assert (tokenizer_dir / "tokenizer.model").exists()
+    assert (tokenizer_dir / "tokenizer_config.json").exists()
+    assert (tokenizer_dir / "special_tokens_map.json").exists()
+    assert loaded.__class__.__name__ == "SentencePieceLlamaTokenizer"
     assert len(loaded) == len(trained)
+
     encoded = loaded.encode("Äpfel und Grüße aus Köln", add_special_tokens=False)
     decoded = loaded.decode(encoded)
 
@@ -33,7 +36,7 @@ def test_train_and_load_tokenizer_with_german_umlauts(tmp_path):
     assert "Köln" in decoded
 
 
-def test_special_tokens_exist(tmp_path):
+def test_special_tokens_exist_with_llama_ids(tmp_path):
     raw_dir = tmp_path / "raw"
     tokenizer_dir = tmp_path / "tokenizer"
     raw_dir.mkdir()
@@ -51,9 +54,12 @@ def test_special_tokens_exist(tmp_path):
     for token in DEFAULT_SPECIAL_TOKENS.values():
         token_id = tokenizer.convert_tokens_to_ids(token)
         assert token_id is not None
-        assert token_id != tokenizer.unk_token_id or token == DEFAULT_SPECIAL_TOKENS["unk_token"]
 
-    assert tokenizer.bos_token == "<|bos|>"
-    assert tokenizer.eos_token == "<|eos|>"
-    assert tokenizer.pad_token == "<|pad|>"
-    assert tokenizer.unk_token == "<|unk|>"
+    assert tokenizer.unk_token == "<unk>"
+    assert tokenizer.bos_token == "<s>"
+    assert tokenizer.eos_token == "</s>"
+    assert tokenizer.pad_token == "<pad>"
+    assert tokenizer.unk_token_id == 0
+    assert tokenizer.bos_token_id == 1
+    assert tokenizer.eos_token_id == 2
+    assert tokenizer.pad_token_id == 3

@@ -64,7 +64,7 @@ def run_evaluation(
 ) -> Path:
     checkpoint_path = Path(checkpoint)
     resolved_tokenizer_dir = Path(tokenizer_dir)
-    if (checkpoint_path / "tokenizer" / "tokenizer.json").exists() and str(tokenizer_dir) == "tokenizer/smoke":
+    if (checkpoint_path / "tokenizer" / "tokenizer.model").exists() and str(tokenizer_dir) == "tokenizer/smoke":
         resolved_tokenizer_dir = checkpoint_path / "tokenizer"
 
     tokenizer = load_fast_tokenizer(resolved_tokenizer_dir)

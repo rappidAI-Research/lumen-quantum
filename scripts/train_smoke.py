@@ -13,6 +13,7 @@ import logging
 import math
 import random
 import shutil
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -229,6 +230,45 @@ def resolve_resume_checkpoint(output_dir: str | Path, resume_value: str | None) 
     return checkpoint
 
 
+def remove_path_with_retries(path: str | Path, attempts: int = 5, delay_seconds: float = 0.2) -> None:
+    target = Path(path)
+    if not target.exists():
+        return
+
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+            return
+        except PermissionError as exc:
+            last_error = exc
+            if attempt < attempts - 1:
+                time.sleep(delay_seconds)
+
+    raise PermissionError(f"Konnte {target} nach {attempts} Versuchen nicht entfernen: {last_error}")
+
+
+def finalize_checkpoint_dir(temp_dir: str | Path, checkpoint_dir: str | Path) -> None:
+    temp = Path(temp_dir)
+    target = Path(checkpoint_dir)
+    if not temp.exists():
+        raise FileNotFoundError(f"Temporaerer Checkpoint-Ordner fehlt: {temp}")
+
+    remove_path_with_retries(target)
+    try:
+        shutil.move(str(temp), str(target))
+    except PermissionError as exc:
+        raise PermissionError(
+            "Checkpoint konnte unter Windows nicht finalisiert werden. "
+            f"Temp-Ordner: {temp}; Ziel: {target}. "
+            "Falls ein Virenscanner oder Explorer-Fenster den Ordner blockiert, "
+            "schliesse es kurz und starte den Trainingsbefehl erneut."
+        ) from exc
+
+
 def save_checkpoint(
     accelerator: Accelerator,
     model,
@@ -242,8 +282,7 @@ def save_checkpoint(
 ) -> None:
     checkpoint_dir = checkpoint_for_step(output_dir, global_step)
     temp_dir = checkpoint_dir.with_name(f"{checkpoint_dir.name}.tmp")
-    if temp_dir.exists():
-        shutil.rmtree(temp_dir)
+    remove_path_with_retries(temp_dir)
     temp_dir.mkdir(parents=True, exist_ok=True)
     unwrapped = accelerator.unwrap_model(model)
     # Gewichte + config.json (inkl. architectures) + generation_config.json als
@@ -267,9 +306,8 @@ def save_checkpoint(
     }
     accelerator.save(training_state, temp_dir / "training_state.pt")
     copy_tokenizer(tokenizer_dir, temp_dir / "tokenizer")
-    if checkpoint_dir.exists():
-        shutil.rmtree(checkpoint_dir)
-    temp_dir.replace(checkpoint_dir)
+    copy_tokenizer_files_to_model_root(tokenizer_dir, temp_dir)
+    finalize_checkpoint_dir(temp_dir, checkpoint_dir)
     latest_file = Path(output_dir) / "latest_checkpoint.txt"
     latest_file.write_text(str(checkpoint_dir), encoding="utf-8")
     LOGGER.info("Checkpoint gespeichert: %s", checkpoint_dir)
@@ -296,6 +334,7 @@ def save_final_model(
         safe_serialization=True,
     )
     copy_tokenizer(tokenizer_dir, final_dir / "tokenizer")
+    copy_tokenizer_files_to_model_root(tokenizer_dir, final_dir)
     metadata = {
         "saved_at_utc": datetime.now(timezone.utc).isoformat(),
         "global_step": global_step,
@@ -317,6 +356,23 @@ def copy_tokenizer(source_dir: str | Path, target_dir: str | Path) -> None:
     if target.exists():
         shutil.rmtree(target)
     shutil.copytree(source, target)
+
+
+def copy_tokenizer_files_to_model_root(source_dir: str | Path, model_dir: str | Path) -> None:
+    """Kopiert llama.cpp-relevante Tokenizer-Dateien direkt ins Modellverzeichnis."""
+
+    source = Path(source_dir)
+    target = Path(model_dir)
+    files = [
+        "tokenizer.model",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+        "added_tokens.json",
+    ]
+    for filename in files:
+        source_file = source / filename
+        if source_file.exists():
+            shutil.copy2(source_file, target / filename)
 
 
 @torch.no_grad()

@@ -1,7 +1,7 @@
-"""Trainiert den lokalen BPE-Tokenizer fuer Lumen Quantum.
+"""Trainiert den lokalen SentencePiece-BPE-Tokenizer fuer Lumen Quantum.
 
 Dieses Skript nutzt nur lokale Textdateien aus data/raw und speichert einen
-Hugging-Face-kompatiblen FastTokenizer unter tokenizer/smoke. Es werden keine
+LLaMA-/llama.cpp-kompatiblen Tokenizer unter tokenizer/smoke. Es werden keine
 externen Tokenizer oder Modellgewichte geladen.
 """
 
@@ -10,23 +10,87 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 import yaml
-from tokenizers import Tokenizer, decoders, models, normalizers, pre_tokenizers, trainers
-from transformers import PreTrainedTokenizerFast
+
+try:
+    import sentencepiece as spm
+except ImportError as exc:  # pragma: no cover - exercised only without dependency installed.
+    raise ImportError(
+        "sentencepiece ist erforderlich fuer den LLaMA-/GGUF-kompatiblen Tokenizer. "
+        "Installiere zuerst: pip install -r requirements.txt"
+    ) from exc
 
 
 LOGGER = logging.getLogger("lumen.train_tokenizer")
 
 DEFAULT_SPECIAL_TOKENS = {
-    "bos_token": "<|bos|>",
-    "eos_token": "<|eos|>",
-    "pad_token": "<|pad|>",
-    "unk_token": "<|unk|>",
+    "bos_token": "<s>",
+    "eos_token": "</s>",
+    "pad_token": "<pad>",
+    "unk_token": "<unk>",
 }
+
+
+class SentencePieceLlamaTokenizer:
+    """Minimaler lokaler Tokenizer-Adapter fuer Training und Generierung."""
+
+    def __init__(
+        self,
+        model_file: str | Path,
+        special_tokens: dict[str, str] | None = None,
+        model_max_length: int | None = None,
+    ):
+        self.model_file = str(model_file)
+        self.special_tokens = {**DEFAULT_SPECIAL_TOKENS, **(special_tokens or {})}
+        self.sp_model = spm.SentencePieceProcessor(model_file=self.model_file)
+        self.model_max_length = model_max_length
+        self.unk_token = self.special_tokens["unk_token"]
+        self.bos_token = self.special_tokens["bos_token"]
+        self.eos_token = self.special_tokens["eos_token"]
+        self.pad_token = self.special_tokens["pad_token"]
+        self.unk_token_id = self.sp_model.piece_to_id(self.unk_token)
+        self.bos_token_id = self.sp_model.piece_to_id(self.bos_token)
+        self.eos_token_id = self.sp_model.piece_to_id(self.eos_token)
+        self.pad_token_id = self.sp_model.piece_to_id(self.pad_token)
+
+    def __len__(self) -> int:
+        return int(self.sp_model.get_piece_size())
+
+    def encode(self, text: str, add_special_tokens: bool = False) -> list[int]:
+        ids = list(self.sp_model.encode(text, out_type=int))
+        if add_special_tokens:
+            ids = [self.bos_token_id, *ids, self.eos_token_id]
+        return ids
+
+    def decode(self, token_ids, skip_special_tokens: bool = False) -> str:
+        ids = [int(token_id) for token_id in token_ids]
+        if skip_special_tokens:
+            special_ids = {
+                self.unk_token_id,
+                self.bos_token_id,
+                self.eos_token_id,
+                self.pad_token_id,
+            }
+            ids = [token_id for token_id in ids if token_id not in special_ids]
+        return self.sp_model.decode(ids)
+
+    def convert_tokens_to_ids(self, token: str) -> int:
+        return int(self.sp_model.piece_to_id(token))
+
+    def __call__(self, text: str, return_tensors: str | None = None, add_special_tokens: bool = False):
+        ids = self.encode(text, add_special_tokens=add_special_tokens)
+        if return_tensors == "pt":
+            import torch
+
+            return {"input_ids": torch.tensor([ids], dtype=torch.long)}
+        if return_tensors is not None:
+            raise ValueError(f"return_tensors={return_tensors!r} wird nicht unterstuetzt.")
+        return {"input_ids": ids}
 
 
 def setup_logging() -> None:
@@ -59,34 +123,25 @@ def find_text_files(input_dir: str | Path) -> list[Path]:
     return files
 
 
-def make_tokenizer(unk_token: str) -> Tokenizer:
-    tokenizer = Tokenizer(models.BPE(unk_token=unk_token))
-    tokenizer.normalizer = normalizers.Sequence([normalizers.NFKC()])
-    tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=True)
-    tokenizer.decoder = decoders.ByteLevel()
-    return tokenizer
-
-
 def load_fast_tokenizer(
     tokenizer_dir: str | Path,
     special_tokens: dict[str, str] | None = None,
     model_max_length: int | None = None,
-) -> PreTrainedTokenizerFast:
-    """Laedt den lokalen Tokenizer ohne AutoTokenizer.from_pretrained."""
+) -> SentencePieceLlamaTokenizer:
+    """Laedt den lokalen SentencePiece-Tokenizer ohne from_pretrained."""
 
     tokens = {**DEFAULT_SPECIAL_TOKENS, **(special_tokens or {})}
-    tokenizer_file = Path(tokenizer_dir) / "tokenizer.json"
+    tokenizer_file = Path(tokenizer_dir) / "tokenizer.model"
     if not tokenizer_file.exists():
         raise FileNotFoundError(
-            f"Tokenizer-Datei nicht gefunden: {tokenizer_file}. Fuehre zuerst train_tokenizer.py aus."
+            f"SentencePiece-Tokenizer nicht gefunden: {tokenizer_file}. "
+            "Fuehre zuerst train_tokenizer.py aus."
         )
 
-    tokenizer = PreTrainedTokenizerFast(
-        tokenizer_file=str(tokenizer_file),
-        bos_token=tokens["bos_token"],
-        eos_token=tokens["eos_token"],
-        pad_token=tokens["pad_token"],
-        unk_token=tokens["unk_token"],
+    tokenizer = SentencePieceLlamaTokenizer(
+        model_file=tokenizer_file,
+        special_tokens=tokens,
+        model_max_length=model_max_length,
     )
     # Nur setzen, wenn ausdruecklich gewuenscht. Beim Tokenisieren der Rohdaten
     # bleibt der Wert bewusst offen, damit lange Absaetze nicht abgeschnitten,
@@ -94,6 +149,23 @@ def load_fast_tokenizer(
     if model_max_length is not None:
         tokenizer.model_max_length = int(model_max_length)
     return tokenizer
+
+
+def write_training_corpus(files: list[Path]) -> Path:
+    handle = tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        suffix=".txt",
+        prefix="lumen_sentencepiece_",
+        delete=False,
+    )
+    with handle:
+        for path in files:
+            text = path.read_text(encoding="utf-8").strip()
+            if text:
+                handle.write(text)
+                handle.write("\n")
+    return Path(handle.name)
 
 
 def train_tokenizer(
@@ -104,37 +176,73 @@ def train_tokenizer(
     seed: int,
     special_tokens: dict[str, str] | None = None,
     model_max_length: int | None = None,
-) -> PreTrainedTokenizerFast:
-    # Hinweis zur Reproduzierbarkeit: Das BPE-Training der tokenizers-Bibliothek
-    # ist deterministisch, sobald die Eingabedateien in stabiler Reihenfolge
-    # vorliegen (siehe sortiertes find_text_files). Der Seed selbst beeinflusst
-    # das Rust-Training nicht; er wird nur zur Nachvollziehbarkeit dokumentiert.
+    byte_fallback: bool = False,
+) -> SentencePieceLlamaTokenizer:
+    # Hinweis zur Reproduzierbarkeit: SentencePiece trainiert deterministisch,
+    # solange die Eingabetexte in stabiler Reihenfolge zusammengefuehrt werden.
+    # Der Seed wird zur Nachvollziehbarkeit dokumentiert.
     tokens = {**DEFAULT_SPECIAL_TOKENS, **(special_tokens or {})}
-    special_token_values = [
-        tokens["bos_token"],
-        tokens["eos_token"],
-        tokens["pad_token"],
-        tokens["unk_token"],
-    ]
-
     files = find_text_files(input_dir)
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
 
-    LOGGER.info("Trainiere BPE-Tokenizer aus %d Textdatei(en).", len(files))
-    tokenizer = make_tokenizer(tokens["unk_token"])
-    trainer = trainers.BpeTrainer(
-        vocab_size=vocab_size,
-        min_frequency=min_frequency,
-        special_tokens=special_token_values,
-        initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),
-        show_progress=True,
-    )
-    tokenizer.train(files=[str(path) for path in files], trainer=trainer)
-    tokenizer.save(str(output / "tokenizer.json"))
+    LOGGER.info("Trainiere SentencePiece-BPE-Tokenizer aus %d Textdatei(en).", len(files))
+    corpus_file = write_training_corpus(files)
+    model_prefix = output / "tokenizer"
+    try:
+        spm.SentencePieceTrainer.Train(
+            input=str(corpus_file),
+            model_prefix=str(model_prefix),
+            model_type="bpe",
+            vocab_size=int(vocab_size),
+            character_coverage=1.0,
+            input_sentence_size=0,
+            shuffle_input_sentence=False,
+            hard_vocab_limit=False,
+            byte_fallback=bool(byte_fallback),
+            split_digits=True,
+            allow_whitespace_only_pieces=True,
+            remove_extra_whitespaces=False,
+            normalization_rule_name="nfkc",
+            unk_id=0,
+            bos_id=1,
+            eos_id=2,
+            pad_id=3,
+            unk_piece=tokens["unk_token"],
+            bos_piece=tokens["bos_token"],
+            eos_piece=tokens["eos_token"],
+            pad_piece=tokens["pad_token"],
+            minloglevel=1,
+        )
+    finally:
+        corpus_file.unlink(missing_ok=True)
 
     fast_tokenizer = load_fast_tokenizer(output, tokens, model_max_length=model_max_length)
-    fast_tokenizer.save_pretrained(str(output))
+
+    tokenizer_config = output / "tokenizer_config.json"
+    config = {
+        "tokenizer_class": "LlamaTokenizer",
+        "model_max_length": model_max_length,
+        "bos_token": tokens["bos_token"],
+        "eos_token": tokens["eos_token"],
+        "pad_token": tokens["pad_token"],
+        "unk_token": tokens["unk_token"],
+        "add_bos_token": True,
+        "add_eos_token": False,
+        "legacy": False,
+    }
+    tokenizer_config.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    special_tokens_map = {
+        "bos_token": tokens["bos_token"],
+        "eos_token": tokens["eos_token"],
+        "pad_token": tokens["pad_token"],
+        "unk_token": tokens["unk_token"],
+    }
+    (output / "special_tokens_map.json").write_text(
+        json.dumps(special_tokens_map, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
     metadata = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -146,25 +254,37 @@ def train_tokenizer(
         "actual_vocab_size": len(fast_tokenizer),
         "min_frequency": min_frequency,
         "special_tokens": tokens,
+        "tokenizer_library": "sentencepiece",
+        "model_type": "bpe",
         "normalizer": "NFKC",
-        "pre_tokenizer": "ByteLevel(add_prefix_space=True)",
+        "byte_fallback": bool(byte_fallback),
+        "sentencepiece_model": str(output / "tokenizer.model"),
         "model_max_length": model_max_length,
     }
     with (output / "tokenizer_metadata.json").open("w", encoding="utf-8") as handle:
         json.dump(metadata, handle, ensure_ascii=False, indent=2)
 
-    LOGGER.info("Tokenizer gespeichert in %s mit %d Tokens.", output, len(fast_tokenizer))
+    LOGGER.info(
+        "SentencePiece-Tokenizer gespeichert in %s mit %d Tokens.",
+        output,
+        len(fast_tokenizer),
+    )
     return fast_tokenizer
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trainiert den Lumen-Smoke-BPE-Tokenizer.")
+    parser = argparse.ArgumentParser(description="Trainiert den Lumen-Smoke-SentencePiece-BPE-Tokenizer.")
     parser.add_argument("--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration.")
     parser.add_argument("--input-dir", help="Ordner mit .txt-Rohdaten. Ueberschreibt die Config.")
     parser.add_argument("--output-dir", help="Zielordner fuer den Tokenizer. Ueberschreibt die Config.")
     parser.add_argument("--vocab-size", type=int, help="BPE-Vokabulargroesse. Ueberschreibt die Config.")
     parser.add_argument("--min-frequency", type=int, help="Mindesthaeufigkeit fuer BPE-Merges.")
     parser.add_argument("--seed", type=int, help="Seed fuer reproduzierbare Dateireihenfolge/Einstellungen.")
+    parser.add_argument(
+        "--byte-fallback",
+        action="store_true",
+        help="Byte-Fallback aktivieren. Fuer llama.cpp-Smoke standardmaessig aus.",
+    )
     return parser.parse_args(argv)
 
 
@@ -189,6 +309,7 @@ def main(argv: Iterable[str] | None = None) -> None:
         seed=args.seed if args.seed is not None else int(config["seed"]),
         special_tokens=tokenizer_config.get("special_tokens"),
         model_max_length=context_length,
+        byte_fallback=bool(args.byte_fallback or tokenizer_config.get("byte_fallback", False)),
     )
 
 

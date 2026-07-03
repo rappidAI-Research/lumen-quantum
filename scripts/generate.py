@@ -120,7 +120,7 @@ def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
     checkpoint = Path(args.checkpoint)
     tokenizer_dir = Path(args.tokenizer_dir)
-    if (checkpoint / "tokenizer" / "tokenizer.json").exists() and args.tokenizer_dir == "tokenizer/smoke":
+    if (checkpoint / "tokenizer" / "tokenizer.model").exists() and args.tokenizer_dir == "tokenizer/smoke":
         tokenizer_dir = checkpoint / "tokenizer"
 
     tokenizer = load_fast_tokenizer(tokenizer_dir)

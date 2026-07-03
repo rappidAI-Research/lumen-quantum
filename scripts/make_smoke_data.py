@@ -7,7 +7,7 @@ Merkmale:
 - rein synthetisch aus Vorlagen und Wortlisten kombiniert
 - keine echten personenbezogenen Daten (nur generische Rollen)
 - keine kopierten Bücher, Songtexte oder Webseiten
-- echte deutsche Umlaute und ß, damit die Byte-Level-Tokenisierung geprüft wird
+- echte deutsche Umlaute und ß, damit die SentencePiece-Tokenisierung geprüft wird
 - deterministisch über einen festen Seed (reproduzierbar)
 
 Jeder Satz wird als eigener Absatz (durch Leerzeile getrennt) geschrieben,

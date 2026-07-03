@@ -1,8 +1,8 @@
 # Lumen Quantum
 
-Lumen Quantum ist ein kleines Python-Projekt zum Trainieren eines eigenen deutschsprachigen Decoder-only-Sprachmodells. Diese erste Version ist absichtlich nur ein Smoke-Test: Sie soll beweisen, dass Tokenizer, Datenvorbereitung, Training, Checkpoints, Resume, Generierung und Evaluation funktionieren.
+Lumen Quantum ist ein kleines Python-Projekt zum Trainieren eines eigenen deutschsprachigen Decoder-only-Sprachmodells. Diese Version ist ein Smoke-Test: Sie prueft Tokenizer, Datenvorbereitung, Training, Checkpoints, Resume, Generierung, Evaluation und GGUF-Export.
 
-Wichtig: Das Modell lädt niemals vortrainierte Modellgewichte. `LlamaForCausalLM` wird direkt aus `LlamaConfig` erstellt und startet mit zufälligen Gewichten.
+Wichtig: Das Modell laedt niemals vortrainierte Modellgewichte. `LlamaForCausalLM` wird direkt aus `LlamaConfig` erstellt und startet mit zufaelligen Gewichten. Der Tokenizer wird ebenfalls selbst aus lokalen Textdaten trainiert.
 
 ## Projektstruktur
 
@@ -14,14 +14,14 @@ data/tokenized/   tokenisierte Trainingsdaten
 data/evals/       einfache Eval-Prompts und Ergebnisse
 tokenizer/        selbst trainierte Tokenizer
 scripts/          Pipeline-Skripte
-models/           lokale Checkpoints und finale Smoke-Modelle
+models/           lokale Checkpoints, finale Modelle und GGUF-Dateien
 tests/            Pytest-Tests
 docs/             spaetere Dokumentation
 ```
 
 ## 1. Einrichtung unter Windows PowerShell
 
-Empfohlen ist Python 3.12 oder 3.11. Nutze fuer PyTorch nicht blind eine sehr neue Python-Version, falls dafuer noch keine passenden Wheels verfuegbar sind.
+Empfohlen ist Python 3.12 oder 3.11.
 
 ```powershell
 cd C:\LumenQuantum
@@ -37,13 +37,6 @@ Falls du nur Python 3.11 installiert hast:
 py -3.11 -m venv .venv
 ```
 
-Falls PowerShell die Aktivierung blockiert:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-.\.venv\Scripts\Activate.ps1
-```
-
 ## 2. Einrichtung unter Linux oder Cloud-GPU
 
 ```bash
@@ -54,13 +47,13 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Falls deine Cloud-Umgebung Python 3.11 nutzt:
+Falls deine Umgebung Python 3.11 nutzt:
 
 ```bash
 python3.11 -m venv .venv
 ```
 
-Prüfe optional, ob CUDA sichtbar ist:
+Optional CUDA pruefen:
 
 ```bash
 python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
@@ -98,7 +91,33 @@ Antwort: Lumen ist ein lokaler Testassistent.
 EOF
 ```
 
-## 4. Tokenizer trainieren
+## 4. Alte Smoke-Artefakte entfernen
+
+Wenn du bereits einen Smoke-Lauf mit dem alten Byte-Level-BPE-Tokenizer gemacht hast, loesche die abgeleiteten Artefakte. Die Rohdaten in `data/raw/` bleiben erhalten.
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force tokenizer\smoke, data\tokenized\*, data\processed\*, models\smoke -ErrorAction SilentlyContinue
+```
+
+Linux:
+
+```bash
+rm -rf tokenizer/smoke data/tokenized/* data/processed/* models/smoke
+```
+
+Die neue Reihenfolge ist:
+
+```text
+Tokenizer neu trainieren -> Daten neu tokenisieren -> Smoke-Modell neu trainieren -> GGUF exportieren
+```
+
+## 5. Tokenizer trainieren
+
+Der Smoke-Tokenizer ist ein selbst trainierter SentencePiece-BPE-Tokenizer. Das ist wichtig fuer llama.cpp/GGUF, weil der klassische LLaMA-Konverter `tokenizer.model` erwartet. Die Special Tokens sind LLaMA-kompatibel: `<unk>` = 0, `<s>` = 1, `</s>` = 2, `<pad>` = 3. Byte-Fallback bleibt fuer diesen Smoke-Test aus.
+
+Windows:
 
 ```powershell
 python scripts\train_tokenizer.py --config configs\smoke_5m.yaml
@@ -110,9 +129,9 @@ Linux:
 python scripts/train_tokenizer.py --config configs/smoke_5m.yaml
 ```
 
-Der Tokenizer wird in `tokenizer/smoke/` gespeichert.
+Ergebnis: `tokenizer/smoke/tokenizer.model` plus zugehoerige Konfigurationsdateien.
 
-## 5. Daten vorbereiten
+## 6. Daten vorbereiten
 
 Windows:
 
@@ -126,9 +145,9 @@ Linux:
 python scripts/prepare_data.py --config configs/smoke_5m.yaml
 ```
 
-Die Dateien `data/tokenized/train.pt`, `data/tokenized/validation.pt`, `data/tokenized/test.pt` (Held-out) und Metadaten werden erzeugt. Der Test-Split wird während des Trainings nie geladen. Bei sehr kleinen Datensätzen kann `test.pt` entfallen (Warnung im Log).
+Die Dateien `data/tokenized/train.pt`, `data/tokenized/validation.pt`, optional `data/tokenized/test.pt` und Metadaten werden erzeugt.
 
-## 6. Smoke-Modell trainieren
+## 7. Smoke-Modell trainieren
 
 Windows:
 
@@ -142,15 +161,15 @@ Linux:
 python scripts/train_smoke.py --config configs/smoke_5m.yaml
 ```
 
-Für einen sehr kurzen Funktionstest:
+Sehr kurzer Funktionstest:
 
 ```powershell
 python scripts\train_smoke.py --config configs\smoke_5m.yaml --max-steps 5
 ```
 
-Checkpoints landen unter `models/smoke/checkpoints/checkpoint-step-XXXXX/`, das finale Modell unter `models/smoke/final/`. Auch ein kurzer Lauf mit `--max-steps 5` speichert am Ende einen vollständigen Resume-Checkpoint.
+Checkpoints landen unter `models/smoke/checkpoints/checkpoint-step-XXXXX/`, das finale Modell unter `models/smoke/final/`. Das finale Modell enthaelt `config.json`, Modellgewichte und `tokenizer.model`.
 
-## 7. Training fortsetzen
+## 8. Training fortsetzen
 
 Windows:
 
@@ -168,7 +187,7 @@ python scripts/train_smoke.py --config configs/smoke_5m.yaml --resume-from auto
 
 Du kannst auch einen konkreten Checkpoint-Ordner angeben, zum Beispiel `models/smoke/checkpoints/checkpoint-step-00005`.
 
-## 8. Text generieren
+## 9. Text generieren
 
 Windows:
 
@@ -188,7 +207,40 @@ Optionen:
 python scripts/generate.py --prompt "Frage: Was ist Lumen? Antwort:" --max-new-tokens 60 --temperature 0.8 --top-p 0.9
 ```
 
-## 9. Einfache Evaluation ausführen
+## 10. GGUF exportieren
+
+Der Export nutzt das lokal erzeugte Hugging-Face-Modell aus `models/smoke/final/` und laedt keine vortrainierten Gewichte. Der Wrapper prueft vorher `config.json`, Modellgewichte und `tokenizer.model` und ruft dann den llama.cpp-Konverter auf.
+
+Windows PowerShell, wenn llama.cpp lokal unter `C:\srv\lumen\llama.cpp` liegt:
+
+```powershell
+python scripts\export_gguf.py --model-dir models\smoke\final --output-file models\smoke\quantum-smoke-f16.gguf --llama-cpp-dir C:\srv\lumen\llama.cpp
+```
+
+Linux oder Raspberry Pi mit llama.cpp unter `/srv/lumen/llama.cpp`:
+
+```bash
+python scripts/export_gguf.py --model-dir models/smoke/final --output-file models/smoke/quantum-smoke-f16.gguf --llama-cpp-dir /srv/lumen/llama.cpp
+```
+
+Direkter llama.cpp-Konvertierungsbefehl:
+
+```bash
+python /srv/lumen/llama.cpp/convert_hf_to_gguf.py models/smoke/final --outfile models/smoke/quantum-smoke-f16.gguf --outtype f16
+```
+
+Nutze den Wrapper, wenn du vorher pruefen willst, ob `config.json`, Gewichte und `tokenizer.model` vollstaendig vorhanden sind.
+
+Auf dem Raspberry Pi testest du das zufaellig initialisierte Smoke-Modell als reine Completion, nicht als Chat:
+
+```bash
+cd /srv/lumen/llama.cpp
+./build/bin/llama-completion -m /srv/lumen/models/quantum-smoke-f16.gguf -p "Lumen ist" -n 32
+```
+
+`llama-cli` ist in aktuellen llama.cpp-Versionen ein Chat-Client. Ein zufaelliges Smoke-Modell wurde nicht auf Chat-Formate trainiert und kann deshalb mit `llama-cli` beim Parsen der Antwort abbrechen.
+
+## 11. Einfache Evaluation ausfuehren
 
 Lege zuerst Prompts an.
 
@@ -216,7 +268,7 @@ python scripts/evaluate.py --checkpoint models/smoke/final --eval-file data/eval
 
 Die Ergebnisse werden als JSONL in `data/evals/smoke_results.jsonl` gespeichert.
 
-## 10. Tests ausführen
+## 12. Tests ausfuehren
 
 Windows:
 
@@ -234,5 +286,5 @@ python -m pytest
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.
 - Die Smoke-Konfiguration ist klein und dient nur dem Pipeline-Test.
-- Wenn du die Tokenizer-Vokabulargroesse aenderst, bereite die Daten neu vor und trainiere das Modell neu.
+- Wenn du Tokenizer oder Vokabulargroesse aenderst, musst du Daten neu tokenisieren und das Modell neu trainieren.
 - Lokale Checkpoints sind erlaubt. Verboten ist das Laden vortrainierter Modellgewichte aus externen Quellen.
