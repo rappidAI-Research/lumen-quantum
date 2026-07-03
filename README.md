@@ -477,6 +477,44 @@ models/
 tokenizer/
 ```
 
+## 17. Cloud-GPU-Pilot vorbereiten
+
+Der Cloud-Pilot nutzt die bereits validierte `quantum-1-base` Architektur mit `49,295,872` Parametern und die tokenisierten Pilotdaten aus `data/quantum/tokenized/pilot/`. Es wird kein Cloud-Server gestartet und kein langes Training ausgefuehrt.
+
+Lokaler CPU-Dry-Run unter Windows PowerShell:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+python scripts\train_quantum_pilot.py --config configs\quantum_1_cloud_pilot.yaml --dry-run
+```
+
+RunPod/Linux Dry-Run:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml --dry-run
+```
+
+GPU-Pilot mit maximal 100 Schritten:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml
+```
+
+Resume:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml --resume-from auto
+```
+
+Beim Start loggt das Skript Geraet, GPU-Name, VRAM, PyTorch-Version, CUDA-Version und Mixed Precision. Auf CUDA wird automatisch `bf16` bevorzugt, sonst `fp16`; auf CPU bleibt Mixed Precision aus.
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.

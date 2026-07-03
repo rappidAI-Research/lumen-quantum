@@ -94,6 +94,55 @@ class JsonlTokenBlockDataset(Dataset):
         return self.examples[index]
 
 
+class TokenizedTensorDataset(Dataset):
+    """Laedt bereits gepackte quantum-Pilotdaten aus train.pt/validation.pt/test.pt."""
+
+    def __init__(self, path: str | Path, vocab_size: int, context_length: int):
+        data_path = Path(path)
+        if not data_path.exists():
+            raise FileNotFoundError(f"Tokenisierte Datei nicht gefunden: {data_path}")
+
+        data = torch.load(data_path, map_location="cpu", weights_only=True)
+        required = {"input_ids", "attention_mask", "labels"}
+        missing = required.difference(data)
+        if missing:
+            raise ValueError(f"{data_path} enthaelt nicht alle Pflichtfelder: {sorted(missing)}")
+
+        self.input_ids = data["input_ids"].long()
+        self.attention_mask = data["attention_mask"].long()
+        self.labels = data["labels"].long()
+        self.metadata = data.get("metadata", {})
+
+        if self.input_ids.ndim != 2:
+            raise ValueError(f"input_ids in {data_path} muss zweidimensional sein.")
+        if self.input_ids.shape != self.attention_mask.shape or self.input_ids.shape != self.labels.shape:
+            raise ValueError(f"input_ids, attention_mask und labels haben unterschiedliche Formen in {data_path}.")
+        if self.input_ids.shape[1] != int(context_length):
+            raise ValueError(
+                f"{data_path} hat Kontextlaenge {self.input_ids.shape[1]}, erwartet {context_length}."
+            )
+        if self.input_ids.numel() == 0:
+            raise ValueError(f"{data_path} enthaelt keine Sequenzen.")
+
+        minimum = int(self.input_ids.min().item())
+        maximum = int(self.input_ids.max().item())
+        if minimum < 0 or maximum >= int(vocab_size):
+            raise ValueError(
+                f"Token-IDs in {data_path} liegen ausserhalb des Vokabulars: "
+                f"min={minimum}, max={maximum}, vocab_size={vocab_size}."
+            )
+
+    def __len__(self) -> int:
+        return int(self.input_ids.shape[0])
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        return {
+            "input_ids": self.input_ids[index],
+            "attention_mask": self.attention_mask[index],
+            "labels": self.labels[index],
+        }
+
+
 def iter_jsonl_texts(path: Path, text_field: str) -> Iterable[str]:
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
@@ -122,6 +171,56 @@ def setup_logging(output_dir: str | Path | None = None) -> None:
     )
 
 
+def detect_runtime_environment(requested_mixed_precision: str = "auto") -> dict:
+    cuda_available = torch.cuda.is_available()
+    device = "cuda" if cuda_available else "cpu"
+    gpu_name = None
+    total_vram_gb = None
+    bf16_supported = False
+    if cuda_available:
+        gpu_name = torch.cuda.get_device_name(0)
+        properties = torch.cuda.get_device_properties(0)
+        total_vram_gb = round(properties.total_memory / (1024**3), 2)
+        bf16_supported = bool(torch.cuda.is_bf16_supported())
+
+    if requested_mixed_precision == "auto":
+        if not cuda_available:
+            mixed_precision = "no"
+        elif bf16_supported:
+            mixed_precision = "bf16"
+        else:
+            mixed_precision = "fp16"
+    else:
+        mixed_precision = str(requested_mixed_precision)
+        if not cuda_available and mixed_precision != "no":
+            LOGGER.warning("Mixed Precision %s wurde angefordert, aber CUDA fehlt. Nutze mixed_precision='no'.", mixed_precision)
+            mixed_precision = "no"
+
+    return {
+        "device": device,
+        "cuda_available": cuda_available,
+        "gpu_name": gpu_name,
+        "total_vram_gb": total_vram_gb,
+        "torch_version": torch.__version__,
+        "cuda_version": torch.version.cuda,
+        "bf16_supported": bf16_supported,
+        "mixed_precision": mixed_precision,
+    }
+
+
+def log_runtime_environment(runtime: dict) -> None:
+    LOGGER.info("Geraet: %s", runtime["device"])
+    LOGGER.info("PyTorch-Version: %s", runtime["torch_version"])
+    LOGGER.info("CUDA-Version: %s", runtime["cuda_version"])
+    if runtime["cuda_available"]:
+        LOGGER.info("GPU: %s", runtime["gpu_name"])
+        LOGGER.info("VRAM: %.2f GB", runtime["total_vram_gb"])
+        LOGGER.info("bf16 unterstuetzt: %s", runtime["bf16_supported"])
+    else:
+        LOGGER.info("CUDA nicht verfuegbar; Training/Dry-Run laeuft auf CPU.")
+    LOGGER.info("Mixed Precision: %s", runtime["mixed_precision"])
+
+
 def get_rng_state() -> dict:
     state = {"python": random.getstate(), "torch": torch.get_rng_state()}
     if torch.cuda.is_available():
@@ -141,7 +240,11 @@ def set_rng_state(state: dict | None) -> None:
 
 
 def create_scheduler(optimizer, training_config: dict, total_steps: int):
-    warmup_steps = min(int(training_config["warmup_steps"]), max(0, total_steps - 1))
+    if training_config.get("warmup_ratio") is not None:
+        warmup_steps = int(total_steps * float(training_config["warmup_ratio"]))
+    else:
+        warmup_steps = int(training_config.get("warmup_steps", 0))
+    warmup_steps = min(warmup_steps, max(0, total_steps - 1))
     scheduler_name = str(training_config.get("lr_scheduler", "cosine")).lower()
     if scheduler_name == "linear":
         return get_linear_schedule_with_warmup(optimizer, warmup_steps, total_steps)
@@ -324,30 +427,42 @@ def evaluate_loss(model, dataloader: DataLoader, accelerator: Accelerator) -> fl
     return float(torch.cat(losses).mean().item())
 
 
-def train(config_path: str | Path, resume_from: str | None = None, max_steps_override: int | None = None) -> Path:
-    config = load_yaml_config(config_path)
-    training_config = config["training"]
-    output_dir = Path(training_config["output_dir"])
-    setup_logging(output_dir)
-    set_reproducible_seed(int(config["seed"]))
+def tokenized_split_file(data_config: dict, split: str) -> Path:
+    return Path(data_config["tokenized_dir"]) / f"{split}.pt"
 
-    size_report = inspect_model_size(config_path)
-    LOGGER.info("Parameterzahl geprueft: %s", f"{size_report['parameter_count']:,}")
-    tokenizer_info = load_quantum_tokenizer_info(config)
-    llama_config = build_quantum_llama_config(config, tokenizer_info)
-    model = build_quantum_model(llama_config)
-    LOGGER.info("Modell initialisiert mit zufaelligen Gewichten: %s Parameter.", f"{count_parameters(model):,}")
 
-    max_steps = int(max_steps_override if max_steps_override is not None else training_config["max_steps"])
-    if max_steps <= 0:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        LOGGER.info("max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 fuer einen lokalen Pilotlauf.", max_steps)
-        return output_dir
+def validate_tokenized_data_dir(data_config: dict, vocab_size: int, context_length: int) -> dict[str, dict]:
+    if "tokenized_dir" not in data_config:
+        raise ValueError("Cloud-Pilot erwartet data.tokenized_dir mit train.pt, validation.pt und test.pt.")
 
+    stats: dict[str, dict] = {}
+    for split in ["train", "validation", "test"]:
+        dataset = TokenizedTensorDataset(tokenized_split_file(data_config, split), vocab_size, context_length)
+        stats[split] = {
+            "path": str(tokenized_split_file(data_config, split)),
+            "sequences": len(dataset),
+            "context_length": int(dataset.input_ids.shape[1]),
+            "tokens_including_padding": int(dataset.input_ids.numel()),
+            "metadata": dataset.metadata,
+        }
+    return stats
+
+
+def build_datasets(config: dict, tokenizer_info, llama_config) -> tuple[Dataset, Dataset, dict[str, dict]]:
     data_config = config["data"]
     block_size = int(data_config["block_size"])
     if block_size > int(llama_config.max_position_embeddings):
         raise ValueError("data.block_size ist groesser als max_position_embeddings.")
+
+    if data_config.get("tokenized_dir"):
+        data_stats = validate_tokenized_data_dir(data_config, tokenizer_info.vocab_size, block_size)
+        train_dataset = TokenizedTensorDataset(tokenized_split_file(data_config, "train"), tokenizer_info.vocab_size, block_size)
+        validation_dataset = TokenizedTensorDataset(
+            tokenized_split_file(data_config, "validation"),
+            tokenizer_info.vocab_size,
+            block_size,
+        )
+        return train_dataset, validation_dataset, data_stats
 
     train_dataset = JsonlTokenBlockDataset(
         data_config["train_file"],
@@ -363,6 +478,75 @@ def train(config_path: str | Path, resume_from: str | None = None, max_steps_ove
         block_size,
         tokenizer_info.pad_token_id,
     )
+    return train_dataset, validation_dataset, {
+        "train": {"path": str(data_config["train_file"]), "sequences": len(train_dataset), "source": "jsonl"},
+        "validation": {
+            "path": str(data_config["validation_file"]),
+            "sequences": len(validation_dataset),
+            "source": "jsonl",
+        },
+    }
+
+
+@torch.no_grad()
+def run_dry_run(model, dataset: Dataset, device: torch.device) -> dict:
+    model.to(device)
+    model.eval()
+    sample = dataset[0]
+    batch = {key: value.unsqueeze(0).to(device) for key, value in sample.items()}
+    outputs = model(**batch)
+    if outputs.loss is None or not torch.isfinite(outputs.loss):
+        raise ValueError("Dry-Run Forward Pass lieferte keinen endlichen Loss.")
+    return {
+        "loss": float(outputs.loss.detach().cpu().item()),
+        "logits_shape": list(outputs.logits.shape),
+        "device": str(device),
+    }
+
+
+def train(
+    config_path: str | Path,
+    resume_from: str | None = None,
+    max_steps_override: int | None = None,
+    dry_run: bool = False,
+) -> Path:
+    config = load_yaml_config(config_path)
+    training_config = config["training"]
+    output_dir = Path(training_config["output_dir"])
+    setup_logging(None if dry_run else output_dir)
+    set_reproducible_seed(int(config["seed"]))
+    runtime = detect_runtime_environment(str(training_config.get("mixed_precision", "auto")))
+    log_runtime_environment(runtime)
+
+    size_report = inspect_model_size(config_path)
+    LOGGER.info("Parameterzahl geprueft: %s", f"{size_report['parameter_count']:,}")
+    tokenizer_info = load_quantum_tokenizer_info(config)
+    llama_config = build_quantum_llama_config(config, tokenizer_info)
+    model = build_quantum_model(llama_config)
+    LOGGER.info("Modell initialisiert mit zufaelligen Gewichten: %s Parameter.", f"{count_parameters(model):,}")
+    LOGGER.info("Vortrainierte Modellgewichte: nein; Modell wurde direkt aus LlamaConfig gebaut.")
+
+    train_dataset, validation_dataset, data_stats = build_datasets(config, tokenizer_info, llama_config)
+    LOGGER.info("Train-Sequenzen: %d", len(train_dataset))
+    LOGGER.info("Validation-Sequenzen: %d", len(validation_dataset))
+    if "test" in data_stats:
+        LOGGER.info("Test-Sequenzen geprueft: %d", data_stats["test"]["sequences"])
+
+    if dry_run:
+        report = run_dry_run(model, train_dataset, torch.device(runtime["device"]))
+        LOGGER.info(
+            "Dry-Run erfolgreich: loss=%.4f logits_shape=%s. Keine Gewichte gespeichert.",
+            report["loss"],
+            report["logits_shape"],
+        )
+        return output_dir
+
+    max_steps = int(max_steps_override if max_steps_override is not None else training_config["max_steps"])
+    if max_steps <= 0:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        LOGGER.info("max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 fuer einen lokalen Pilotlauf.", max_steps)
+        return output_dir
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=int(training_config["batch_size"]),
@@ -384,7 +568,7 @@ def train(config_path: str | Path, resume_from: str | None = None, max_steps_ove
     scheduler = create_scheduler(optimizer, training_config, max_steps)
     accelerator = Accelerator(
         gradient_accumulation_steps=int(training_config["gradient_accumulation_steps"]),
-        mixed_precision=str(training_config.get("mixed_precision", "no")),
+        mixed_precision=str(runtime["mixed_precision"]),
     )
 
     resume_value = resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
@@ -478,12 +662,13 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--config", default="configs/quantum_1_base_pilot.yaml")
     parser.add_argument("--resume-from", help="Checkpoint-Ordner, training_state.pt oder 'auto'.")
     parser.add_argument("--max-steps", type=int, help="Maximale Trainingsschritte fuer einen lokalen Pilotlauf.")
+    parser.add_argument("--dry-run", action="store_true", help="Baut Modell und Daten, macht Forward Pass, speichert nichts.")
     return parser.parse_args(argv)
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
-    train(args.config, resume_from=args.resume_from, max_steps_override=args.max_steps)
+    train(args.config, resume_from=args.resume_from, max_steps_override=args.max_steps, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
