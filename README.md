@@ -341,6 +341,47 @@ data/quantum/manifests/data_manifest.md
 
 Die Splits werden per stabiler SHA256-Bucket-Logik erzeugt: Train 98 %, Validation 1 %, Test 1 %. Exakte Duplikate und offensichtlich unbrauchbare Texte werden entfernt. Die Tokenzahlen sind nur grobe Schaetzungen, weil fuer quantum-1 noch kein Tokenizer trainiert wird.
 
+## 14. quantum-1 Pilot-Tokenizer trainieren
+
+Dieser Schritt baut nur den Pilot-Tokenizer `quantum-1-pilot`. Er ist noch nicht der finale eingefrorene quantum-1-Tokenizer und wird spaeter auf einer groesseren dokumentierten Datenmenge neu trainiert. Es werden keine vortrainierten Tokenizer und keine Modellgewichte geladen.
+
+Der Pilot-Tokenizer wird ausschliesslich aus `data/quantum/cleaned/train.jsonl` trainiert. `validation.jsonl` und `test.jsonl` bleiben fuer Qualitaetspruefung reserviert.
+
+Windows PowerShell:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python scripts\train_quantum_tokenizer.py --config configs\quantum_1_tokenizer_pilot.yaml
+python scripts\validate_quantum_tokenizer.py --config configs\quantum_1_tokenizer_pilot.yaml
+```
+
+Ergebnis:
+
+```text
+tokenizer/quantum-1-pilot/tokenizer.model
+tokenizer/quantum-1-pilot/tokenizer.vocab
+tokenizer/quantum-1-pilot/tokenizer_config.json
+tokenizer/quantum-1-pilot/special_tokens_map.json
+tokenizer/quantum-1-pilot/tokenizer_manifest.json
+tokenizer/quantum-1-pilot/validation_report.json
+```
+
+Der Tokenizer nutzt SentencePiece BPE mit 16384 Tokens. Die LLaMA/GGUF-kompatiblen Basis-IDs bleiben fest: `<unk>` = 0, `<s>` = 1, `</s>` = 2, `<pad>` = 3. Fuer spaeteres Chat-Training sind ausserdem `<|system|>`, `<|user|>` und `<|assistant|>` enthalten.
+
+Nur die Tokenizer-Tests ausfuehren:
+
+```powershell
+python -m pytest tests\test_quantum_tokenizer.py
+```
+
+Alle Tests ausfuehren:
+
+```powershell
+python -m pytest
+```
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.

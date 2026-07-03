@@ -1,0 +1,50 @@
+project:
+  name: "Lumen Quantum"
+  tokenizer_name: "quantum-1-pilot"
+  description: "Pilot-Tokenizer fuer quantum-1; noch nicht der finale eingefrorene Tokenizer."
+
+seed: 20260703
+
+data:
+  train_file: "data/quantum/cleaned/train.jsonl"
+  text_field: "text"
+
+tokenizer:
+  type: "sentencepiece_bpe"
+  output_dir: "tokenizer/quantum-1-pilot"
+  vocab_size: 16384
+  character_coverage: 1.0
+  hard_vocab_limit: true
+  byte_fallback: false
+  split_digits: true
+  allow_whitespace_only_pieces: true
+  remove_extra_whitespaces: false
+  normalization_rule_name: "nfkc"
+  special_tokens:
+    unk_token: "<unk>"
+    bos_token: "<s>"
+    eos_token: "</s>"
+    pad_token: "<pad>"
+    additional_special_tokens:
+      - "<|system|>"
+      - "<|user|>"
+      - "<|assistant|>"
+
+future_llama_config:
+  architecture: "LlamaForCausalLM"
+  vocab_size: 16384
+  max_position_embeddings: 1024
+  bos_token_id: 1
+  eos_token_id: 2
+  pad_token_id: 3
+  unk_token_id: 0
+  tokenizer_class: "LlamaTokenizer"
+
+validation:
+  normal_sentences:
+    - "Äpfel, Öl und Grüße aus Köln."
+    - "Lumen erklärt ruhig, warum ein eigener deutscher Tokenizer wichtig ist."
+    - "Fußgänger überqueren die Straße, während das Modell deutsche Umlaute verarbeitet."
+  roundtrip_sentences:
+    - "Lumen ist ein deutschsprachiger Assistent."
+    - "Schöne Grüße aus München und Köln."
