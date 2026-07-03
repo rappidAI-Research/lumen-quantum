@@ -282,9 +282,16 @@ Linux:
 python -m pytest
 ```
 
-## 13. quantum-1 Datenpipeline vorbereiten
+## 13. quantum-1 FineWeb2-HQ Datenpipeline vorbereiten
 
-Diese Pipeline bereitet nur eine kleine, reproduzierbare deutsche Datenstichprobe vor. Es wird kein quantum-1-Tokenizer trainiert, kein grosses Modell trainiert und es werden keine Modellgewichte geladen.
+Diese Pipeline streamt eine kleine deutsche Pilotmenge aus `epfml/FineWeb2-HQ`, Subset `deu_Latn`. Es wird kein quantum-1-Tokenizer trainiert, kein grosses Modell trainiert und es werden keine Modellgewichte geladen.
+
+Limits in `configs/quantum_1_data.yaml`:
+
+```text
+max_documents: 100000
+max_raw_bytes: 2147483648
+```
 
 Die Ausgaben liegen hier:
 
@@ -292,47 +299,47 @@ Die Ausgaben liegen hier:
 data/quantum/raw/
 data/quantum/cleaned/
 data/quantum/manifests/
+data/quantum/reports/
 ```
 
 Windows PowerShell:
 
 ```powershell
 cd C:\LumenQuantum
+pip install -r requirements.txt
 python scripts\download_quantum_data.py --config configs\quantum_1_data.yaml
 python scripts\clean_quantum_data.py --config configs\quantum_1_data.yaml
 python scripts\sample_quantum_data.py --config configs\quantum_1_data.yaml
+python scripts\inspect_quantum_data.py --config configs\quantum_1_data.yaml
 python scripts\build_data_manifest.py --config configs\quantum_1_data.yaml
 ```
 
-Linux Bash:
+Linux oder spaeter RunPod:
 
 ```bash
 cd /path/to/LumenQuantum
+pip install -r requirements.txt
 python scripts/download_quantum_data.py --config configs/quantum_1_data.yaml
 python scripts/clean_quantum_data.py --config configs/quantum_1_data.yaml
 python scripts/sample_quantum_data.py --config configs/quantum_1_data.yaml
+python scripts/inspect_quantum_data.py --config configs/quantum_1_data.yaml
 python scripts/build_data_manifest.py --config configs/quantum_1_data.yaml
-```
-
-Optional, wenn spaeter echte kleine URL-Quellen in `configs/quantum_1_data.yaml` eingetragen sind:
-
-```bash
-python scripts/download_quantum_data.py --config configs/quantum_1_data.yaml --allow-network
 ```
 
 Wichtige Dateien nach dem Lauf:
 
 ```text
-data/quantum/raw/documents.jsonl
+data/quantum/raw/fineweb2_hq_deu_latn_raw.jsonl
 data/quantum/cleaned/documents_cleaned.jsonl
 data/quantum/cleaned/train.jsonl
 data/quantum/cleaned/validation.jsonl
 data/quantum/cleaned/test.jsonl
+data/quantum/reports/quantum_data_report.json
 data/quantum/manifests/data_manifest.json
 data/quantum/manifests/data_manifest.md
 ```
 
-Die Splits werden per SHA256 disjunkt gehalten. Exakte Duplikate und offensichtlich unbrauchbare Texte werden entfernt. Die Tokenzahlen sind nur grobe Schaetzungen, weil fuer quantum-1 noch kein Tokenizer trainiert wird.
+Die Splits werden per stabiler SHA256-Bucket-Logik erzeugt: Train 98 %, Validation 1 %, Test 1 %. Exakte Duplikate und offensichtlich unbrauchbare Texte werden entfernt. Die Tokenzahlen sind nur grobe Schaetzungen, weil fuer quantum-1 noch kein Tokenizer trainiert wird.
 
 ## Hinweise
 

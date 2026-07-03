@@ -1,11 +1,11 @@
-"""Erstellt reproduzierbare Train/Validation/Test-Splits fuer quantum-1-Daten."""
+"""Teilt quantum-1-Daten per stabiler Hash-Logik in Train/Validation/Test."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
-import random
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -41,39 +41,36 @@ def validate_ratios(train_ratio: float, validation_ratio: float, test_ratio: flo
         raise ValueError("Alle Split-Ratios muessen groesser als 0 sein.")
 
 
-def split_records(records: list[dict], seed: int, sampling_config: dict) -> dict[str, list[dict]]:
-    max_documents = int(sampling_config["max_documents"])
+def split_for_hash(document_hash: str, seed: int, train_ratio: float, validation_ratio: float) -> str:
+    digest = hashlib.sha256(f"{seed}:{document_hash}".encode("utf-8")).hexdigest()
+    bucket = int(digest[:12], 16) / float(16**12)
+    if bucket < train_ratio:
+        return "train"
+    if bucket < train_ratio + validation_ratio:
+        return "validation"
+    return "test"
+
+
+def split_records(records: list[dict], sampling_config: dict) -> dict[str, list[dict]]:
+    seed = int(sampling_config["split_seed"])
     train_ratio = float(sampling_config["train_ratio"])
     validation_ratio = float(sampling_config["validation_ratio"])
     test_ratio = float(sampling_config["test_ratio"])
     validate_ratios(train_ratio, validation_ratio, test_ratio)
 
-    by_hash: dict[str, dict] = {}
+    splits = {"train": [], "validation": [], "test": []}
+    seen_hashes: set[str] = set()
     for record in records:
-        by_hash.setdefault(record["sha256"], record)
-    unique_records = list(by_hash.values())
+        digest = record["sha256"]
+        if digest in seen_hashes:
+            raise ValueError(f"Deduplizierung fehlgeschlagen, doppelter Hash: {digest}")
+        seen_hashes.add(digest)
+        split = split_for_hash(digest, seed, train_ratio, validation_ratio)
+        output = dict(record)
+        output["split"] = split
+        splits[split].append(output)
 
-    rng = random.Random(seed)
-    rng.shuffle(unique_records)
-    selected = unique_records[:max_documents]
-    n = len(selected)
-    if n < 3:
-        raise ValueError("Mindestens 3 bereinigte Dokumente sind fuer Train/Validation/Test noetig.")
-
-    validation_count = max(1, round(n * validation_ratio))
-    test_count = max(1, round(n * test_ratio))
-    while n - validation_count - test_count < 1:
-        if test_count > 1:
-            test_count -= 1
-        elif validation_count > 1:
-            validation_count -= 1
-        else:
-            raise ValueError("Zu wenige Dokumente fuer disjunkte Splits.")
-
-    test = selected[:test_count]
-    validation = selected[test_count : test_count + validation_count]
-    train = selected[test_count + validation_count :]
-    return {"train": train, "validation": validation, "test": test}
+    return splits
 
 
 def assert_disjoint(splits: dict[str, list[dict]]) -> None:
@@ -107,7 +104,7 @@ def run(config_path: str | Path) -> dict[str, Path]:
         raise FileNotFoundError(f"Bereinigte Daten fehlen: {cleaned_file}. Fuehre clean_quantum_data.py aus.")
 
     records = read_jsonl(cleaned_file)
-    splits = split_records(records, int(config["seed"]), config["sampling"])
+    splits = split_records(records, config["sampling"])
     assert_disjoint(splits)
 
     cleaned_dir = Path(config["paths"]["cleaned_dir"])
@@ -119,11 +116,11 @@ def run(config_path: str | Path) -> dict[str, Path]:
 
     metadata = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "seed": int(config["seed"]),
         "input_file": str(cleaned_file),
         "sampling": config["sampling"],
         "stats": split_stats(splits),
         "disjoint_by": "sha256",
+        "split_method": "sha256(f'{split_seed}:{document_sha256}') bucket",
     }
     (cleaned_dir / "split_metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2),
@@ -139,7 +136,7 @@ def run(config_path: str | Path) -> dict[str, Path]:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Erstellt quantum-1 Train/Validation/Test-Splits.")
+    parser = argparse.ArgumentParser(description="Erstellt stabile quantum-1 Splits.")
     parser.add_argument("--config", default="configs/quantum_1_data.yaml")
     return parser.parse_args(argv)
 

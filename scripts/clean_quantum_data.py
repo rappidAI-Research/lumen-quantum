@@ -1,4 +1,4 @@
-"""Bereinigt quantum-1-Rohdaten und entfernt unbrauchbare Dokumente."""
+"""Bereinigt die FineWeb2-HQ Pilotdaten fuer quantum-1."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ GERMAN_STOPWORDS = {
     "der", "die", "das", "und", "ist", "ein", "eine", "mit", "fuer", "nicht",
     "werden", "wird", "im", "in", "den", "dem", "zu", "auf", "von", "sich",
     "dass", "auch", "als", "oder", "wenn", "diese", "dieser", "diesen",
+    "ich", "du", "wir", "sie", "er", "es", "hat", "haben", "kann", "sind",
 }
 
 
@@ -32,10 +33,7 @@ def setup_logging() -> None:
 
 
 def load_config(path: str | Path) -> dict:
-    config_path = Path(path)
-    if not config_path.exists():
-        raise FileNotFoundError(f"Konfigurationsdatei nicht gefunden: {config_path}")
-    with config_path.open("r", encoding="utf-8") as handle:
+    with Path(path).open("r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
 
 
@@ -61,6 +59,7 @@ def write_jsonl(records: list[dict], path: str | Path) -> None:
 
 def normalize_text(text: str) -> str:
     text = text.replace("\ufeff", " ")
+    text = text.replace("\ufffd", " ")
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
@@ -71,14 +70,7 @@ def word_count(text: str) -> int:
 
 
 def approx_token_count(text: str) -> int:
-    # Grobe, tokenizerfreie Schaetzung fuer Manifest/Monitoring.
     return max(1, round(len(text) / 4))
-
-
-def repeated_char_run_too_long(text: str, max_run: int) -> bool:
-    if max_run <= 0:
-        return False
-    return re.search(rf"(.)\1{{{max_run},}}", text) is not None
 
 
 def non_letter_ratio(text: str) -> float:
@@ -94,14 +86,26 @@ def german_stopword_hits(text: str) -> int:
     return sum(1 for word in words if word in GERMAN_STOPWORDS)
 
 
+def repeated_char_run_too_long(text: str, max_run: int) -> bool:
+    return re.search(rf"(.)\1{{{max_run},}}", text) is not None
+
+
+def boilerplate_hit(text: str, patterns: list[str]) -> str | None:
+    lowered = text.lower()
+    for pattern in patterns:
+        if pattern.lower() in lowered:
+            return pattern
+    return None
+
+
 def rejection_reasons(text: str, rules: dict) -> list[str]:
     reasons: list[str] = []
+    if not text:
+        return ["empty_text"]
     chars = len(text)
     words = word_count(text)
     if chars < int(rules["min_chars"]):
         reasons.append("too_short_chars")
-    if chars > int(rules["max_chars"]):
-        reasons.append("too_long_chars")
     if words < int(rules["min_words"]):
         reasons.append("too_few_words")
     if repeated_char_run_too_long(text, int(rules["max_repeated_char_run"])):
@@ -110,21 +114,33 @@ def rejection_reasons(text: str, rules: dict) -> list[str]:
         reasons.append("too_many_non_letters")
     if german_stopword_hits(text) < int(rules["min_german_stopword_hits"]):
         reasons.append("not_enough_german_stopwords")
-
-    lowered = text.lower()
-    for pattern in rules.get("reject_patterns", []):
-        if pattern.lower() in lowered:
-            reasons.append(f"reject_pattern:{pattern}")
+    boilerplate = boilerplate_hit(text, rules.get("boilerplate_patterns", []))
+    if boilerplate:
+        reasons.append(f"boilerplate:{boilerplate}")
     return reasons
+
+
+def truncate_long_document(text: str, max_chars: int) -> tuple[str, bool]:
+    if len(text) <= max_chars:
+        return text, False
+    cut = text[:max_chars]
+    sentence_end = max(cut.rfind("."), cut.rfind("!"), cut.rfind("?"))
+    if sentence_end > max_chars * 0.7:
+        cut = cut[: sentence_end + 1]
+    return cut.strip(), True
 
 
 def clean_records(records: list[dict], rules: dict) -> tuple[list[dict], dict]:
     cleaned: list[dict] = []
     seen_hashes: set[str] = set()
     rejection_counts: Counter[str] = Counter()
+    truncated_documents = 0
 
     for record in records:
         text = normalize_text(str(record.get("text", "")))
+        text, truncated = truncate_long_document(text, int(rules["max_chars"]))
+        if truncated:
+            truncated_documents += 1
         text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
         if rules.get("remove_exact_duplicates", True) and text_hash in seen_hashes:
@@ -137,19 +153,30 @@ def clean_records(records: list[dict], rules: dict) -> tuple[list[dict], dict]:
             rejection_counts.update(reasons)
             continue
 
-        output = dict(record)
-        output["text"] = text
-        output["sha256"] = text_hash
-        output["char_count"] = len(text)
-        output["word_count"] = word_count(text)
-        output["approx_token_count"] = approx_token_count(text)
-        output["cleaned_at_utc"] = datetime.now(timezone.utc).isoformat()
+        output = {
+            "id": record["id"],
+            "source_dataset": record.get("source_dataset"),
+            "source_subset": record.get("source_subset"),
+            "source_revision": record.get("source_revision"),
+            "source_split": record.get("source_split"),
+            "source_index": record.get("source_index"),
+            "source_url": record.get("source_url"),
+            "text": text,
+            "sha256": text_hash,
+            "char_count": len(text),
+            "word_count": word_count(text),
+            "approx_token_count": approx_token_count(text),
+            "was_truncated": truncated,
+            "metadata": record.get("metadata", {}),
+            "cleaned_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
         cleaned.append(output)
 
     stats = {
         "input_documents": len(records),
         "kept_documents": len(cleaned),
         "rejected_documents": len(records) - len(cleaned),
+        "truncated_documents": truncated_documents,
         "rejection_counts": dict(rejection_counts),
         "total_chars": sum(record["char_count"] for record in cleaned),
         "total_words": sum(record["word_count"] for record in cleaned),
@@ -160,7 +187,7 @@ def clean_records(records: list[dict], rules: dict) -> tuple[list[dict], dict]:
 
 def run(config_path: str | Path) -> Path:
     config = load_config(config_path)
-    raw_file = Path(config["paths"]["raw_dir"]) / "documents.jsonl"
+    raw_file = Path(config["paths"]["raw_dir"]) / "fineweb2_hq_deu_latn_raw.jsonl"
     if not raw_file.exists():
         raise FileNotFoundError(f"Rohdaten fehlen: {raw_file}. Fuehre zuerst download_quantum_data.py aus.")
 
@@ -177,11 +204,12 @@ def run(config_path: str | Path) -> Path:
 
     metadata = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "seed": int(config.get("seed", 0)),
+        "seed": int(config["seed"]),
         "input_file": str(raw_file),
         "output_file": str(output_file),
         "cleaning_rules": config["cleaning"],
         "stats": stats,
+        "note": "Metadaten und URL bleiben ausserhalb des Trainingstextes.",
     }
     (cleaned_dir / "cleaning_metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2),
@@ -192,7 +220,7 @@ def run(config_path: str | Path) -> Path:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Bereinigt quantum-1-Rohdaten.")
+    parser = argparse.ArgumentParser(description="Bereinigt FineWeb2-HQ quantum-1 Pilotdaten.")
     parser.add_argument("--config", default="configs/quantum_1_data.yaml")
     return parser.parse_args(argv)
 

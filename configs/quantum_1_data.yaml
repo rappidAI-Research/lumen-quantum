@@ -1,46 +1,65 @@
 project:
   name: "Lumen Quantum"
-  dataset_name: "quantum-1-data-smoke"
-  description: "Reproduzierbare kleine deutsche Datenpipeline fuer das spaetere quantum-1-Modell."
+  dataset_name: "quantum-1-fineweb2hq-deu-pilot"
+  description: "Kleine reproduzierbare deutsche Pilot-Datenpipeline fuer quantum-1."
 
 seed: 20260703
+
+source:
+  hf_dataset: "epfml/FineWeb2-HQ"
+  hf_subset: "deu_Latn"
+  split: "train"
+  revision: "main"
+  license: "ODC-By 1.0 family; siehe Dataset Card"
+  citation: "FineWeb2-HQ, EPFL Machine Learning and Optimization Laboratory"
 
 paths:
   raw_dir: "data/quantum/raw"
   cleaned_dir: "data/quantum/cleaned"
   manifest_dir: "data/quantum/manifests"
+  report_dir: "data/quantum/reports"
 
 download:
-  # Standard bleibt offline und klein. Spaeter koennen hier echte erlaubte
-  # Quellen als URLs ergaenzt und mit --allow-network geladen werden.
-  write_seed_sample: true
-  allow_network_default: false
-  max_documents_per_source: 20
-  sources: []
+  streaming: true
+  max_documents: 10000
+  max_raw_bytes: 268435456
+  shuffle_buffer_size: 10000
+  text_fields:
+    - "text"
+    - "content"
+    - "raw_content"
+  url_fields:
+    - "url"
+    - "source_url"
+    - "warc_url"
+    - "metadata.url"
 
 cleaning:
-  min_chars: 120
-  max_chars: 12000
-  min_words: 20
-  max_repeated_char_run: 6
-  max_non_letter_ratio: 0.35
-  min_german_stopword_hits: 3
+  min_chars: 200
+  max_chars: 40000
+  min_words: 40
+  max_repeated_char_run: 8
+  max_non_letter_ratio: 0.40
+  min_german_stopword_hits: 5
   normalize_whitespace: true
   remove_exact_duplicates: true
-  reject_patterns:
+  boilerplate_patterns:
     - "cookie"
-    - "javascript"
+    - "cookies akzeptieren"
     - "datenschutz"
     - "newsletter"
-    - "login"
+    - "javascript"
     - "registrieren"
+    - "einloggen"
+    - "warenkorb"
+    - "agb"
 
 sampling:
-  max_documents: 200
-  train_ratio: 0.8
-  validation_ratio: 0.1
-  test_ratio: 0.1
+  split_seed: 20260703
+  train_ratio: 0.98
+  validation_ratio: 0.01
+  test_ratio: 0.01
 
 manifest:
-  version: "quantum-1-data-smoke-v0"
-  notes: "Kleine technische Datenstichprobe; noch kein finaler Trainingsdatensatz."
+  version: "quantum-1-fineweb2hq-deu-pilot-v0"
+  notes: "Pilotmenge aus FineWeb2-HQ deu_Latn; noch kein quantum-1-Training."
