@@ -24,6 +24,7 @@ data/raw/*
 data/processed/*
 data/tokenized/*
 data/evals/*
+data/quantum/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/tokenized/.gitkeep

@@ -1,0 +1,46 @@
+project:
+  name: "Lumen Quantum"
+  dataset_name: "quantum-1-data-smoke"
+  description: "Reproduzierbare kleine deutsche Datenpipeline fuer das spaetere quantum-1-Modell."
+
+seed: 20260703
+
+paths:
+  raw_dir: "data/quantum/raw"
+  cleaned_dir: "data/quantum/cleaned"
+  manifest_dir: "data/quantum/manifests"
+
+download:
+  # Standard bleibt offline und klein. Spaeter koennen hier echte erlaubte
+  # Quellen als URLs ergaenzt und mit --allow-network geladen werden.
+  write_seed_sample: true
+  allow_network_default: false
+  max_documents_per_source: 20
+  sources: []
+
+cleaning:
+  min_chars: 120
+  max_chars: 12000
+  min_words: 20
+  max_repeated_char_run: 6
+  max_non_letter_ratio: 0.35
+  min_german_stopword_hits: 3
+  normalize_whitespace: true
+  remove_exact_duplicates: true
+  reject_patterns:
+    - "cookie"
+    - "javascript"
+    - "datenschutz"
+    - "newsletter"
+    - "login"
+    - "registrieren"
+
+sampling:
+  max_documents: 200
+  train_ratio: 0.8
+  validation_ratio: 0.1
+  test_ratio: 0.1
+
+manifest:
+  version: "quantum-1-data-smoke-v0"
+  notes: "Kleine technische Datenstichprobe; noch kein finaler Trainingsdatensatz."
