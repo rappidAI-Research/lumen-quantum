@@ -422,6 +422,61 @@ Danach kann ein lokal gespeicherter Pilot-Checkpoint so getestet werden:
 python scripts\generate_quantum.py --config configs\quantum_1_base_pilot.yaml --checkpoint models\quantum-1-base\final --prompt "Lumen ist"
 ```
 
+## 16. quantum-1 Pilotdaten tokenisieren
+
+Dieser Schritt erzeugt die Trainingssequenzen fuer den spaeteren Cloud-Pilot. Es wird noch kein Modell trainiert und kein Cloud-Server gestartet. Der lokale Tokenizer `tokenizer/quantum-1-pilot/` wird direkt als SentencePiece-Modell geladen; es werden keine vortrainierten Tokenizer oder Modellgewichte geladen.
+
+Windows PowerShell:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml
+```
+
+Falls die Ausgaben bereits existieren und du sie bewusst neu erzeugen willst:
+
+```powershell
+python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml --overwrite
+```
+
+Kleiner lokaler Limit-Test:
+
+```powershell
+python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml --overwrite --max-tokens 100000 --validation-max-tokens 20000 --test-max-tokens 20000
+```
+
+Linux oder RunPod:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/tokenize_quantum_data.py --config configs/quantum_1_pilot_data.yaml
+```
+
+Ausgabe:
+
+```text
+data/quantum/tokenized/pilot/train.pt
+data/quantum/tokenized/pilot/validation.pt
+data/quantum/tokenized/pilot/test.pt
+data/quantum/tokenized/pilot/tokenization_manifest.json
+```
+
+Die Sequenzen sind exakt 512 Tokens lang. Jedes Dokument endet vor dem Packen mit `</s>`. Die letzte unvollstaendige Sequenz wird mit `<pad>` aufgefuellt; Padding-Labels sind `-100`.
+
+Diese Daten gehoeren nicht in Git:
+
+```text
+data/quantum/raw/
+data/quantum/cleaned/
+data/quantum/tokenized/
+data/quantum/manifests/
+data/quantum/reports/
+models/
+tokenizer/
+```
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.

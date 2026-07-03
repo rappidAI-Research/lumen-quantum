@@ -1,0 +1,34 @@
+project:
+  name: "Lumen Quantum"
+  dataset_name: "quantum-1-pilot-tokenized"
+  description: "Tokenisierte Pilotdaten fuer den spaeteren Cloud-Pilot von quantum-1-base."
+
+seed: 20260703
+
+tokenizer:
+  dir: "tokenizer/quantum-1-pilot"
+  model_file: "tokenizer.model"
+  manifest_file: "tokenizer_manifest.json"
+
+input:
+  train_file: "data/quantum/cleaned/train.jsonl"
+  validation_file: "data/quantum/cleaned/validation.jsonl"
+  test_file: "data/quantum/cleaned/test.jsonl"
+  text_field: "text"
+  document_hash_field: "sha256"
+
+output:
+  dir: "data/quantum/tokenized/pilot"
+  manifest_file: "tokenization_manifest.json"
+  overwrite: false
+
+packing:
+  context_length: 512
+  add_eos_after_each_document: true
+  pad_remainder: true
+  drop_empty_documents: true
+
+limits:
+  train_max_tokens: 20000000
+  validation_max_tokens: 1000000
+  test_max_tokens: 1000000
