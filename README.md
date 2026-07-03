@@ -382,6 +382,46 @@ Alle Tests ausfuehren:
 python -m pytest
 ```
 
+## 15. quantum-1-base Architektur pruefen
+
+Dieser Schritt baut noch kein grosses Modelltraining. Er prueft nur die echte `quantum-1-base` Pilot-Architektur mit zufaellig initialisierten Gewichten, den lokalen `quantum-1-pilot`-Tokenizer, einen CPU-Forward-Pass und temporaeres Speichern/Laden.
+
+Die geplante Architektur steht in `configs/quantum_1_base_pilot.yaml`:
+
+```text
+hidden_size: 512
+intermediate_size: 1536
+num_hidden_layers: 12
+num_attention_heads: 8
+num_key_value_heads: 8
+max_position_embeddings: 512
+tie_word_embeddings: true
+```
+
+Mit dem Pilot-Tokenizer `vocab_size = 16384` hat das Modell exakt `49,295,872` Parameter. Es liegt damit im Zielbereich von 45 bis 55 Millionen Parametern.
+
+Windows PowerShell:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+python scripts\inspect_model_size.py --config configs\quantum_1_base_pilot.yaml
+python scripts\validate_quantum_model.py --config configs\quantum_1_base_pilot.yaml
+python -m pytest tests\test_quantum_model.py
+```
+
+Optionaler Mini-Checkpoint-Test, kein grosses Training:
+
+```powershell
+python scripts\train_quantum_pilot.py --config configs\quantum_1_base_pilot.yaml --max-steps 1
+```
+
+Danach kann ein lokal gespeicherter Pilot-Checkpoint so getestet werden:
+
+```powershell
+python scripts\generate_quantum.py --config configs\quantum_1_base_pilot.yaml --checkpoint models\quantum-1-base\final --prompt "Lumen ist"
+```
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.

@@ -1,0 +1,64 @@
+project:
+  name: "Lumen Quantum"
+  model_name: "quantum-1-base"
+  description: "Pilot-Architektur fuer quantum-1-base; noch kein grosses Training."
+
+seed: 20260703
+
+tokenizer:
+  dir: "tokenizer/quantum-1-pilot"
+  manifest_file: "tokenizer_manifest.json"
+
+data:
+  train_file: "data/quantum/cleaned/train.jsonl"
+  validation_file: "data/quantum/cleaned/validation.jsonl"
+  test_file: "data/quantum/cleaned/test.jsonl"
+  text_field: "text"
+  block_size: 512
+
+model:
+  architecture: "LlamaForCausalLM"
+  vocab_size: "auto"
+  hidden_size: 512
+  intermediate_size: 1536
+  num_hidden_layers: 12
+  num_attention_heads: 8
+  num_key_value_heads: 8
+  max_position_embeddings: 512
+  rms_norm_eps: 0.000001
+  rope_theta: 10000.0
+  tie_word_embeddings: true
+  attention_dropout: 0.0
+  initializer_range: 0.02
+  parameter_count_min: 45000000
+  parameter_count_max: 55000000
+
+training:
+  output_dir: "models/quantum-1-base"
+  max_steps: 0
+  batch_size: 1
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  warmup_steps: 10
+  lr_scheduler: "cosine"
+  max_grad_norm: 1.0
+  logging_steps: 1
+  eval_steps: 25
+  save_steps: 25
+  num_workers: 0
+  mixed_precision: "no"
+  resume_from_checkpoint: null
+
+generation:
+  checkpoint_dir: "models/quantum-1-base/final"
+  max_new_tokens: 80
+  temperature: 0.8
+  top_p: 0.9
+
+evaluation:
+  eval_file: "data/evals/quantum_prompts.txt"
+  output_file: "data/evals/quantum_results.jsonl"
+  max_new_tokens: 80
+  temperature: 0.8
+  top_p: 0.9
