@@ -1,0 +1,71 @@
+project:
+  name: "Lumen Quantum"
+  run_name: "smoke-5m"
+  description: "Kleines Decoder-only-Smoke-Test-Modell fuer die Lumen-Pipeline."
+
+seed: 42
+
+tokenizer:
+  input_dir: "data/raw"
+  output_dir: "tokenizer/smoke"
+  vocab_size: 8000
+  min_frequency: 2
+  special_tokens:
+    bos_token: "<|bos|>"
+    eos_token: "<|eos|>"
+    pad_token: "<|pad|>"
+    unk_token: "<|unk|>"
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  tokenized_dir: "data/tokenized"
+  validation_ratio: 0.1
+  test_ratio: 0.1
+  block_size: 256
+
+model:
+  architecture: "LlamaForCausalLM"
+  vocab_size: 8000
+  hidden_size: 256
+  intermediate_size: 768
+  num_hidden_layers: 1
+  num_attention_heads: 8
+  num_key_value_heads: 8
+  max_position_embeddings: 256
+  rms_norm_eps: 0.000001
+  rope_theta: 10000.0
+  tie_word_embeddings: false
+
+training:
+  output_dir: "models/smoke"
+  tokenizer_dir: "tokenizer/smoke"
+  data_dir: "data/tokenized"
+  max_steps: 200
+  batch_size: 4
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0005
+  weight_decay: 0.01
+  warmup_steps: 10
+  lr_scheduler: "cosine"
+  max_grad_norm: 1.0
+  logging_steps: 5
+  eval_steps: 25
+  save_steps: 50
+  num_workers: 0
+  mixed_precision: "no"
+  resume_from_checkpoint: null
+
+generation:
+  checkpoint_dir: "models/smoke/final"
+  tokenizer_dir: "tokenizer/smoke"
+  max_new_tokens: 80
+  temperature: 0.8
+  top_p: 0.9
+
+evaluation:
+  eval_dir: "data/evals"
+  output_file: "data/evals/smoke_results.jsonl"
+  max_new_tokens: 80
+  temperature: 0.8
+  top_p: 0.9

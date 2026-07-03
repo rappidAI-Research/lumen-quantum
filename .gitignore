@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+
+# Training artifacts
+models/*
+!models/.gitkeep
+tokenizer/*
+!tokenizer/.gitkeep
+data/raw/*
+data/processed/*
+data/tokenized/*
+data/evals/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/tokenized/.gitkeep
+!data/evals/.gitkeep
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
