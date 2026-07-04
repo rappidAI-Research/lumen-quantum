@@ -96,12 +96,14 @@ sampling:
 
 manifest:
   version: "quantum-1.6-pilot-deu-v1"
-  notes: "Continued-Pretraining-Datenbasis fuer quantum-1.6-pilot. Tokenizer wird NICHT neu trainiert; es wird der eingefrorene quantum-1-pilot-Tokenizer verwendet. Validation/Test strikt vom Train-Split getrennt (stabile SHA256-Buckets)."
+  notes: "Continued-Pretraining-Datenbasis fuer quantum-1.6-pilot. Tokenizer wird NICHT neu trainiert; es wird der eingefrorene finale Tokenizer tokenizer/quantum-1 (SHA256 be99b723..., identisch zum Basismodell) verwendet. tokenizer/quantum-1-pilot ist der falsche, inkompatible alte Tokenizer. Validation/Test strikt vom Train-Split getrennt (stabile SHA256-Buckets)."
 
 # --- Ab hier: Tokenisierungsschritt (scripts/tokenize_quantum_data.py) ---
 
 tokenizer:
-  dir: "tokenizer/quantum-1-pilot"
+  # Korrekter finaler Tokenizer (byte-identisch zum Basismodell, SHA256 be99b723...).
+  # NICHT tokenizer/quantum-1-pilot (falscher, inkompatibler alter Tokenizer, SHA256 33017b41...).
+  dir: "tokenizer/quantum-1"
   model_file: "tokenizer.model"
   manifest_file: "tokenizer_manifest.json"
 

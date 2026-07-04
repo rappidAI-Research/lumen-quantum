@@ -29,7 +29,17 @@ LOGGER = logging.getLogger("lumen.quantum_1_6_preflight")
 
 EXPECTED_PARAMETER_COUNT = 49295872
 EXPECTED_MODEL_NAME = "quantum-1.6-pilot"
-FROZEN_TOKENIZER_DIR = "tokenizer/quantum-1-pilot"
+
+# Korrekter, finaler Tokenizer. Er ist byte-identisch zum Tokenizer im Basismodell
+# (models/quantum-1-base/final) und traegt exakt diesen SHA256.
+FROZEN_TOKENIZER_DIR = "tokenizer/quantum-1"
+EXPECTED_TOKENIZER_SHA256 = "be99b72377f3cb2ce1c875103d0324a2001ee5543a49e7c8fabfc1e384b1b6f6"
+
+# Falscher, inkompatibler alter Pilot-Tokenizer. Darf fuer quantum-1.6-pilot
+# niemals verwendet werden (abweichender SHA256, passt nicht zu den Basisgewichten).
+INCOMPATIBLE_TOKENIZER_DIR = "tokenizer/quantum-1-pilot"
+INCOMPATIBLE_TOKENIZER_SHA256 = "33017b41667f3ac30a60ee383f9018494b4c2c382ab2e83c7d0d219cd7c4c140"
+
 OUTPUT_DIR_PREFIX = "models/quantum-1.6-pilot"
 PROTECTED_DATA_DIRS = (
     "data/quantum/cleaned",
@@ -169,16 +179,27 @@ def check_output_isolation(config: dict, data_config: dict | None = None) -> Non
 
 
 def check_tokenizer_compatibility(config: dict) -> dict:
-    """Vergleicht den eingefrorenen Tokenizer mit dem Tokenizer des Basismodells.
+    """Prueft, dass der korrekte finale Tokenizer verwendet wird.
 
-    Der Tokenizer darf niemals veraendert werden. Diese Pruefung stellt byte-Identitaet
-    (SHA256 von tokenizer.model) sicher und vergleicht Name und Vokabulargroesse.
+    quantum-1.6-pilot MUSS tokenizer/quantum-1 verwenden. Dieser ist byte-identisch
+    zum Tokenizer im Basismodell (models/quantum-1-base/final). Explizit geprueft wird:
+    - tokenizer/quantum-1/tokenizer.model
+    - models/quantum-1-base/final/tokenizer.model
+    - beide SHA256 identisch
+    - der Hash ist der erwartete Wert (be99b723...)
+    Der falsche, inkompatible alte Pilot-Tokenizer (tokenizer/quantum-1-pilot,
+    Hash 33017b41...) wird explizit abgelehnt.
     """
 
     tokenizer_dir = Path(config["tokenizer"]["dir"])
+    if _as_posix(tokenizer_dir) == _as_posix(INCOMPATIBLE_TOKENIZER_DIR):
+        raise PreflightError(
+            f"{INCOMPATIBLE_TOKENIZER_DIR} ist der falsche, inkompatible alte Pilot-Tokenizer "
+            f"(SHA256 {INCOMPATIBLE_TOKENIZER_SHA256}). quantum-1.6-pilot muss {FROZEN_TOKENIZER_DIR} verwenden."
+        )
     if _as_posix(tokenizer_dir) != _as_posix(FROZEN_TOKENIZER_DIR):
         raise PreflightError(
-            f"tokenizer.dir muss der eingefrorene Tokenizer {FROZEN_TOKENIZER_DIR!r} sein, ist: {_as_posix(tokenizer_dir)!r}."
+            f"tokenizer.dir muss der korrekte finale Tokenizer {FROZEN_TOKENIZER_DIR!r} sein, ist: {_as_posix(tokenizer_dir)!r}."
         )
     base_tokenizer_dir = Path(config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"]))
 
@@ -190,29 +211,45 @@ def check_tokenizer_compatibility(config: dict) -> dict:
 
     frozen_hash = sha256_file(frozen_model)
     base_hash = sha256_file(base_model_tok)
+
+    if frozen_hash == INCOMPATIBLE_TOKENIZER_SHA256:
+        raise PreflightError(
+            "Der konfigurierte Tokenizer ist der falsche, inkompatible alte Pilot-Tokenizer "
+            f"(SHA256 {INCOMPATIBLE_TOKENIZER_SHA256}). Erwartet wird {EXPECTED_TOKENIZER_SHA256}."
+        )
     if frozen_hash != base_hash:
         raise PreflightError(
-            "Tokenizer-Inkompatibilitaet: tokenizer.model des eingefrorenen Tokenizers "
+            "Tokenizer-Inkompatibilitaet: tokenizer.model des Tokenizers "
             f"({frozen_hash}) unterscheidet sich vom Tokenizer des Basismodells ({base_hash})."
         )
+    if frozen_hash != EXPECTED_TOKENIZER_SHA256:
+        raise PreflightError(
+            f"Tokenizer-Hash {frozen_hash} entspricht nicht dem erwarteten Wert {EXPECTED_TOKENIZER_SHA256}."
+        )
 
-    manifest = read_json(tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json"))
-    vocab_size = int(manifest.get("actual_vocab_size", -1))
-    report = {
+    # Manifest defensiv lesen (Name/Vokabular sind hilfreich, aber der SHA256 ist maßgeblich).
+    tokenizer_name = None
+    vocab_size = None
+    manifest_path = tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+    if manifest_path.exists():
+        manifest = read_json(manifest_path)
+        tokenizer_name = manifest.get("tokenizer_name")
+        vocab_size = int(manifest.get("actual_vocab_size", 0)) or None
+        if tokenizer_name == "quantum-1-pilot":
+            raise PreflightError(
+                "Tokenizer-Manifest weist 'quantum-1-pilot' aus — das ist der falsche, inkompatible Tokenizer."
+            )
+
+    return {
         "tokenizer_dir": _as_posix(tokenizer_dir),
-        "tokenizer_name": manifest.get("tokenizer_name"),
+        "tokenizer_name": tokenizer_name,
         "vocab_size": vocab_size,
         "tokenizer_model_sha256": frozen_hash,
         "base_model_tokenizer_sha256": base_hash,
+        "expected_tokenizer_sha256": EXPECTED_TOKENIZER_SHA256,
         "identical_to_base_model": frozen_hash == base_hash,
+        "matches_expected_hash": frozen_hash == EXPECTED_TOKENIZER_SHA256,
     }
-    if report["tokenizer_name"] != "quantum-1-pilot":
-        raise PreflightError(
-            f"Erwarteter Tokenizer 'quantum-1-pilot', gefunden: {report['tokenizer_name']!r}."
-        )
-    if vocab_size <= 0:
-        raise PreflightError("Tokenizer-Manifest enthaelt keine gueltige actual_vocab_size.")
-    return report
 
 
 def check_base_model_present(config: dict) -> dict:

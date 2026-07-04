@@ -17,6 +17,8 @@ from scripts.exclude_known_documents import (
 )
 from scripts.quantum_1_6_preflight import (
     EXPECTED_PARAMETER_COUNT,
+    EXPECTED_TOKENIZER_SHA256,
+    INCOMPATIBLE_TOKENIZER_SHA256,
     PreflightError,
     check_output_isolation,
     check_tokenizer_compatibility,
@@ -98,17 +100,51 @@ def test_new_data_paths_do_not_overwrite_previous_dataset():
 
 # --- Tokenizer-Kompatibilitaet -------------------------------------------------
 
-def test_tokenizer_is_frozen_and_identical_to_base_model():
+def _require_tokenizer_files(config: dict) -> None:
+    frozen = Path(config["tokenizer"]["dir"]) / "tokenizer.model"
+    base = Path(config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"])) / "tokenizer.model"
+    if not frozen.exists() or not base.exists():
+        pytest.skip(f"Tokenizer-Dateien lokal nicht vorhanden ({frozen} / {base}); Pruefung laeuft auf RunPod.")
+
+
+def test_config_points_to_correct_tokenizer():
+    # Reine Config-Pruefung (ohne Dateien): quantum-1.6-pilot muss tokenizer/quantum-1 nutzen.
+    train_config = load_yaml_config(TRAIN_CONFIG)
+    data_config = load_yaml_config(DATA_CONFIG)
+    assert train_config["tokenizer"]["dir"] == "tokenizer/quantum-1"
+    assert data_config["tokenizer"]["dir"] == "tokenizer/quantum-1"
+
+
+def test_wrong_pilot_tokenizer_is_rejected():
     config = load_yaml_config(TRAIN_CONFIG)
+    config["tokenizer"]["dir"] = "tokenizer/quantum-1-pilot"
+    with pytest.raises(PreflightError):
+        check_tokenizer_compatibility(config)
+
+
+def test_expected_and_incompatible_hashes_are_pinned():
+    assert EXPECTED_TOKENIZER_SHA256 == "be99b72377f3cb2ce1c875103d0324a2001ee5543a49e7c8fabfc1e384b1b6f6"
+    assert INCOMPATIBLE_TOKENIZER_SHA256 == "33017b41667f3ac30a60ee383f9018494b4c2c382ab2e83c7d0d219cd7c4c140"
+    assert EXPECTED_TOKENIZER_SHA256 != INCOMPATIBLE_TOKENIZER_SHA256
+
+
+def test_tokenizer_is_correct_and_identical_to_base_model():
+    config = load_yaml_config(TRAIN_CONFIG)
+    _require_tokenizer_files(config)
     report = check_tokenizer_compatibility(config)
-    assert report["tokenizer_name"] == "quantum-1-pilot"
+    assert report["tokenizer_dir"] == "tokenizer/quantum-1"
     assert report["identical_to_base_model"] is True
-    assert report["vocab_size"] == 16384
+    assert report["matches_expected_hash"] is True
+    assert report["tokenizer_model_sha256"] == EXPECTED_TOKENIZER_SHA256
+    assert report["base_model_tokenizer_sha256"] == EXPECTED_TOKENIZER_SHA256
+    assert report["tokenizer_name"] != "quantum-1-pilot"
 
 
 def test_full_preflight_passes_on_repo():
+    _require_tokenizer_files(load_yaml_config(TRAIN_CONFIG))
     report = run_preflight(TRAIN_CONFIG, DATA_CONFIG)
     assert report["tokenizer"]["identical_to_base_model"] is True
+    assert report["tokenizer"]["matches_expected_hash"] is True
     assert report["expected_parameter_count"] == EXPECTED_PARAMETER_COUNT
     assert report["base_model"]["weights_file"] in {"model.safetensors", "pytorch_model.bin"}
 
@@ -168,6 +204,7 @@ def test_weights_only_initialization_loads_base_weights():
     from scripts.train_quantum_continued import initialize_from_base_weights, verify_parameter_count
 
     config = load_yaml_config(TRAIN_CONFIG)
+    _require_tokenizer_files(config)
     base_model = Path(config["init"]["from_model"])
     if not (base_model / "model.safetensors").exists():
         pytest.skip("Basismodell models/quantum-1-base/final ist lokal nicht vorhanden.")

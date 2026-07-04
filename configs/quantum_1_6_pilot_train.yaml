@@ -20,7 +20,9 @@ init:
   base_model_tokenizer_dir: "models/quantum-1-base/final"
 
 tokenizer:
-  dir: "tokenizer/quantum-1-pilot"
+  # Korrekter finaler Tokenizer (byte-identisch zum Basismodell, SHA256 be99b723...).
+  # tokenizer/quantum-1-pilot ist der FALSCHE, inkompatible alte Tokenizer und darf hier nie stehen.
+  dir: "tokenizer/quantum-1"
   manifest_file: "tokenizer_manifest.json"
 
 data:

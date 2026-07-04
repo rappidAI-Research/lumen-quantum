@@ -8,18 +8,22 @@ gesehen haben: ~100 Mio. aus quantum-1-pilot + ~500 Mio. neue deutsche Tokens.
 > Vorbereitungsstatus: Code, Konfiguration, Tests und Doku sind fertig.
 > Es wurde noch **kein** Daten-Preprocessing und **kein** Training gestartet.
 
-## Wichtige Fakten und eine Pfad-Klarstellung
+## Wichtige Fakten (auf RunPod verifiziert)
 
 - **Basismodell (Gewichte):** `models/quantum-1-base/final` (enthaelt `model.safetensors`).
-- **Eingefrorener Tokenizer:** real unter **`tokenizer/quantum-1-pilot/`**.
-  Die urspruengliche Aufgabenstellung nannte `tokenizer/quantum-1`; dieser Pfad
-  existiert im Repo nicht. Der Tokenizer, den quantum-1-pilot tatsaechlich benutzt
-  hat, liegt unter `tokenizer/quantum-1-pilot/` und ist **byte-identisch** zum
-  Tokenizer im Basismodell (`models/quantum-1-base/final/tokenizer.model`,
-  SHA256 gleich). Der Preflight erzwingt diese Identitaet.
+- **Korrekter, eingefrorener Tokenizer:** **`tokenizer/quantum-1/`**.
+  Er ist **byte-identisch** zum Tokenizer im Basismodell
+  (`models/quantum-1-base/final/tokenizer.model`) — beide haben SHA256
+  **`be99b72377f3cb2ce1c875103d0324a2001ee5543a49e7c8fabfc1e384b1b6f6`**.
+  quantum-1.6-pilot **muss** diesen Tokenizer verwenden. Der Preflight erzwingt,
+  dass beide Hashes identisch sind und exakt diesem erwarteten Wert entsprechen.
+- **Falscher, inkompatibler alter Pilot-Tokenizer:** `tokenizer/quantum-1-pilot/`
+  (SHA256 `33017b41667f3ac30a60ee383f9018494b4c2c382ab2e83c7d0d219cd7c4c140`).
+  Dieser passt **nicht** zu den Basisgewichten und darf fuer das Training von
+  quantum-1.6-pilot **niemals** verwendet werden. Der Preflight lehnt ihn explizit ab.
 - **Parameterzahl:** exakt **49.295.872** (16384·512 tied + 12·3.408.896 + 512).
 - **Der Tokenizer wird nie neu trainiert oder veraendert.**
-- **quantum-1-pilot, seine Daten und seine Evaluation bleiben unveraendert.**
+- **quantum-1-pilot (das Vorgaengermodell), seine Daten und seine Evaluation bleiben unveraendert.**
 
 ## Neue Dateien
 
@@ -98,8 +102,9 @@ pip install -r requirements.txt
 python -c "import torch; print('CUDA:', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
 ```
 
-Diese Schritte setzen voraus, dass `models/quantum-1-base/final/` und
-`tokenizer/quantum-1-pilot/` auf der Instanz vorhanden sind (mit-synchronisieren).
+Diese Schritte setzen voraus, dass `models/quantum-1-base/final/` und der korrekte
+Tokenizer `tokenizer/quantum-1/` (SHA256 `be99b723...`) auf der Instanz vorhanden
+sind (mit-synchronisieren). **Nicht** `tokenizer/quantum-1-pilot/` verwenden.
 
 ### 1. Datenaufbereitung (~500 Mio. neue Train-Tokens)
 
@@ -169,8 +174,9 @@ Artefakte:
 
 ## Was unveraendert bleibt
 
-Kein Eingriff in Training, Tokenizer oder Gewichte von quantum-1-pilot; keine
-Aenderung an `tokenizer/quantum-1-pilot`, an der bestehenden Evaluation, an der
-Android-App oder an GGUF-Dateien. Alle neuen Artefakte liegen unter
-`data/quantum/quantum_1_6_pilot/`, `models/quantum-1.6-pilot/` und
+Kein Eingriff in Training, Tokenizer oder Gewichte des Vorgaengermodells
+quantum-1-pilot; keine Aenderung an den bestehenden Tokenizern (weder
+`tokenizer/quantum-1` noch `tokenizer/quantum-1-pilot`), an der bestehenden
+Evaluation, an der Android-App oder an GGUF-Dateien. Alle neuen Artefakte liegen
+unter `data/quantum/quantum_1_6_pilot/`, `models/quantum-1.6-pilot/` und
 `logs/quantum_1_6_pilot/`.
