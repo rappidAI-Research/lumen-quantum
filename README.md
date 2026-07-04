@@ -589,6 +589,33 @@ logs/
 
 `configs/quantum_1_final_train.yaml` setzt `training.max_steps: 0`. Fuer echtes Training muss spaeter bewusst ein anderes Schrittlimit gesetzt werden; die Pilotgewichte werden nicht uebernommen, weil der finale Tokenizer neu ist.
 
+## 19. quantum-1-base evaluieren
+
+Nach einem Training wertet `evaluate_quantum.py` das Base-Language-Model aus. Es berechnet zuerst Loss und Perplexity auf `data/quantum/final/tokenized/validation.pt` und erzeugt optional feste deutsche Completion-Beispiele aus `data/evals/quantum_1_base_v1.jsonl`.
+
+RunPod/Linux:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/evaluate_quantum.py --config configs/quantum_1_final_train.yaml --checkpoint models/quantum-1-base/final --device cuda
+```
+
+Windows/CPU:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+python scripts\evaluate_quantum.py --config configs\quantum_1_final_train.yaml --checkpoint models\quantum-1-base\final --device cpu
+```
+
+Die Ergebnisse landen standardmaessig hier:
+
+```text
+data/evals/results/quantum-1-base/evaluation_summary.json
+data/evals/results/quantum-1-base/generations.jsonl
+```
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.

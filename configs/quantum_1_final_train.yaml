@@ -63,3 +63,18 @@ cloud:
   resume: true
   evaluation: true
   notes: "Konfiguration vorbereitet; Training erst nach expliziter Freigabe starten."
+
+evaluation:
+  checkpoint_dir: "models/quantum-1-base/final"
+  tokenizer_dir: "tokenizer/quantum-1"
+  validation_file: "data/quantum/final/tokenized/validation.pt"
+  eval_file: "data/evals/quantum_1_base_v1.jsonl"
+  output_dir: "data/evals/results/quantum-1-base"
+  summary_file: "evaluation_summary.json"
+  generations_file: "generations.jsonl"
+  validation_batch_size: 8
+  max_validation_batches: null
+  generate_samples: true
+  max_new_tokens: 80
+  temperature: 0.8
+  top_p: 0.9

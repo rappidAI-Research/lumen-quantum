@@ -1,0 +1,129 @@
+project:
+  name: "Lumen Quantum"
+  dataset_name: "quantum-1.6-pilot-deu-v1"
+  description: "Neue deutsche FineWeb2-HQ-Datenbasis (~500 Mio. Train-Tokens) fuer das Continued Pretraining von quantum-1.6-pilot. Ueberschneidungen mit dem bisherigen quantum-1-pilot-Datensatz werden aktiv vermieden."
+
+# Bewusst anderer Seed als quantum-1-pilot (20260703) und quantum-1-final (20260704),
+# damit der Streaming-Shuffle eine andere Dokumentreihenfolge liefert und der
+# neue Datensatz sich moeglichst wenig mit dem alten ueberschneidet.
+seed: 20260716
+
+source:
+  hf_dataset: "epfml/FineWeb2-HQ"
+  hf_subset: "deu_Latn"
+  split: "train"
+  revision: "main"
+  license: "ODC-By 1.0 family; siehe Dataset Card"
+  citation: "FineWeb2-HQ, EPFL Machine Learning and Optimization Laboratory"
+
+targets:
+  language: "de"
+  context_length: 512
+  new_train_tokens: 500000000
+  previous_train_tokens: 100000000
+  total_tokens_after_continued_pretraining: 600000000
+  token_count_source: "Nach der Tokenisierung exakt aus den .pt-Dateien / tokenization_manifest.json berichten."
+
+# Neue, isolierte Pfade. Der bisherige Datensatz unter data/quantum/cleaned/ und
+# data/quantum/tokenized/pilot/ wird NICHT ueberschrieben.
+paths:
+  raw_dir: "data/quantum/quantum_1_6_pilot/raw"
+  cleaned_dir: "data/quantum/quantum_1_6_pilot/cleaned"
+  manifest_dir: "data/quantum/quantum_1_6_pilot/manifests"
+  report_dir: "data/quantum/quantum_1_6_pilot/reports"
+
+download:
+  streaming: true
+  # Obergrenzen; die exakte Tokenzahl setzt der Tokenisierungsschritt (limits.train_max_tokens).
+  # Hinweis: download_quantum_data.py haelt Dokumente im RAM. Bei knappem Speicher
+  # max_raw_bytes reduzieren und in mehreren Laeufen/Shards arbeiten.
+  max_documents: 1500000
+  max_raw_bytes: 27917287424
+  shuffle_buffer_size: 100000
+  text_fields:
+    - "text"
+    - "content"
+    - "raw_content"
+  url_fields:
+    - "url"
+    - "source_url"
+    - "warc_url"
+    - "metadata.url"
+
+cleaning:
+  min_chars: 200
+  max_chars: 40000
+  min_words: 40
+  max_repeated_char_run: 8
+  max_non_letter_ratio: 0.40
+  min_german_stopword_hits: 5
+  normalize_whitespace: true
+  remove_exact_duplicates: true
+  boilerplate_patterns:
+    - "cookie"
+    - "cookies akzeptieren"
+    - "datenschutz"
+    - "newsletter"
+    - "javascript"
+    - "registrieren"
+    - "einloggen"
+    - "warenkorb"
+    - "agb"
+
+# Aktive Vermeidung von Ueberschneidungen mit der bisherigen quantum-1-pilot-Datenbasis.
+# scripts/exclude_known_documents.py liest die alten Fingerprints (nur lesend) und
+# entfernt aus dem NEUEN cleaned-Datensatz jedes Dokument, dessen Fingerprint bereits
+# im alten Datensatz vorkommt. Der alte Datensatz wird nie veraendert.
+overlap:
+  previous_dataset_dirs:
+    - "data/quantum/cleaned"
+  previous_dataset_files:
+    - "documents_cleaned.jsonl"
+    - "train.jsonl"
+    - "validation.jsonl"
+    - "test.jsonl"
+  fingerprint_fields:
+    - "sha256"
+    - "id"
+  report_file: "data/quantum/quantum_1_6_pilot/reports/overlap_report.json"
+  known_limitations: "Nur exakte Fingerprints (normalisierter Text-SHA256 und stabile Dokument-ID) werden verglichen. Near-Duplicates (leichte Umformulierungen, andere Whitespace-/HTML-Varianten) koennen dadurch nicht erkannt werden. Der Streaming-Shuffle mit abweichendem Seed reduziert Ueberschneidungen zusaetzlich, garantiert aber ohne Volldeduplikation keine perfekte Disjunktheit."
+
+sampling:
+  split_seed: 20260716
+  train_ratio: 0.98
+  validation_ratio: 0.01
+  test_ratio: 0.01
+
+manifest:
+  version: "quantum-1.6-pilot-deu-v1"
+  notes: "Continued-Pretraining-Datenbasis fuer quantum-1.6-pilot. Tokenizer wird NICHT neu trainiert; es wird der eingefrorene quantum-1-pilot-Tokenizer verwendet. Validation/Test strikt vom Train-Split getrennt (stabile SHA256-Buckets)."
+
+# --- Ab hier: Tokenisierungsschritt (scripts/tokenize_quantum_data.py) ---
+
+tokenizer:
+  dir: "tokenizer/quantum-1-pilot"
+  model_file: "tokenizer.model"
+  manifest_file: "tokenizer_manifest.json"
+
+input:
+  train_file: "data/quantum/quantum_1_6_pilot/cleaned/train.jsonl"
+  validation_file: "data/quantum/quantum_1_6_pilot/cleaned/validation.jsonl"
+  test_file: "data/quantum/quantum_1_6_pilot/cleaned/test.jsonl"
+  text_field: "text"
+  document_hash_field: "sha256"
+
+output:
+  dir: "data/quantum/quantum_1_6_pilot/tokenized"
+  manifest_file: "tokenization_manifest.json"
+  overwrite: false
+
+packing:
+  context_length: 512
+  add_eos_after_each_document: true
+  pad_remainder: true
+  drop_empty_documents: true
+
+limits:
+  train_max_tokens: 500000000
+  validation_max_tokens: 2000000
+  test_max_tokens: 2000000

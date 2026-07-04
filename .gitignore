@@ -30,6 +30,7 @@ data/quantum/tokenized/*
 !data/processed/.gitkeep
 !data/tokenized/.gitkeep
 !data/evals/.gitkeep
+!data/evals/quantum_1_base_v1.jsonl
 
 # Logs and temporary files
 logs/
@@ -42,3 +43,11 @@ logs/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local datasets, raw documents, tokenized tensors and generated training artifacts
+data/**
+
+# Small fixed evaluation prompts are source-controlled
+!data/
+!data/evals/
+!data/evals/quantum_1_base_v1.jsonl
