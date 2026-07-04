@@ -1,0 +1,78 @@
+project:
+  name: "Lumen Quantum"
+  tokenizer_name: "quantum-1"
+  dataset_name: "quantum-1-final-tokenized-v1"
+  description: "Finaler SentencePiece-BPE-Tokenizer und finale Tokenisierung fuer quantum-1."
+
+seed: 20260704
+
+data:
+  train_file: "data/quantum/final/cleaned/train.jsonl"
+  text_field: "text"
+
+tokenizer:
+  type: "sentencepiece_bpe"
+  output_dir: "tokenizer/quantum-1"
+  dir: "tokenizer/quantum-1"
+  model_file: "tokenizer.model"
+  manifest_file: "tokenizer_manifest.json"
+  vocab_size: 16384
+  character_coverage: 1.0
+  hard_vocab_limit: true
+  byte_fallback: false
+  split_digits: true
+  allow_whitespace_only_pieces: true
+  remove_extra_whitespaces: false
+  normalization_rule_name: "nfkc"
+  freeze_marker_file: "FINAL_FROZEN"
+  special_tokens:
+    unk_token: "<unk>"
+    bos_token: "<s>"
+    eos_token: "</s>"
+    pad_token: "<pad>"
+    additional_special_tokens:
+      - "<|system|>"
+      - "<|user|>"
+      - "<|assistant|>"
+
+input:
+  train_file: "data/quantum/final/cleaned/train.jsonl"
+  validation_file: "data/quantum/final/cleaned/validation.jsonl"
+  test_file: "data/quantum/final/cleaned/test.jsonl"
+  text_field: "text"
+  document_hash_field: "sha256"
+
+output:
+  dir: "data/quantum/final/tokenized"
+  manifest_file: "tokenization_manifest.json"
+  overwrite: false
+
+packing:
+  context_length: 512
+  add_eos_after_each_document: true
+  pad_remainder: true
+  drop_empty_documents: true
+
+limits:
+  train_max_tokens: 100000000
+  validation_max_tokens: 1000000
+  test_max_tokens: 1000000
+
+future_llama_config:
+  architecture: "LlamaForCausalLM"
+  vocab_size: 16384
+  max_position_embeddings: 512
+  bos_token_id: 1
+  eos_token_id: 2
+  pad_token_id: 3
+  unk_token_id: 0
+  tokenizer_class: "LlamaTokenizer"
+
+validation:
+  normal_sentences:
+    - "Äpfel, Öl und Grüße aus Köln."
+    - "Lumen erklärt ruhig, warum ein eigener deutscher Tokenizer wichtig ist."
+    - "Fußgänger überqueren die Straße, während das Modell deutsche Umlaute verarbeitet."
+  roundtrip_sentences:
+    - "Lumen ist ein deutschsprachiger Assistent."
+    - "Schöne Grüße aus München und Köln."

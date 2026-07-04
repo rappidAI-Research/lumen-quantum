@@ -1,8 +1,8 @@
-"""Trainiert den quantum-1 Pilot-Tokenizer aus lokalen Trainingsdaten.
+"""Trainiert einen quantum-1 SentencePiece-BPE-Tokenizer aus lokalen Trainingsdaten.
 
 Der Tokenizer wird vollstaendig selbst mit SentencePiece-BPE trainiert. Das
-Skript nutzt ausschliesslich data/quantum/cleaned/train.jsonl und laedt keine
-vortrainierten Tokenizer oder Modellgewichte.
+Skript nutzt ausschliesslich train.jsonl und laedt keine vortrainierten
+Tokenizer oder Modellgewichte.
 """
 
 from __future__ import annotations
@@ -47,6 +47,8 @@ GENERATED_FILES = [
     "validation_report.json",
 ]
 
+FREEZE_MARKER_FILE = "FINAL_FROZEN"
+
 
 def setup_logging() -> None:
     logging.basicConfig(
@@ -76,7 +78,7 @@ def ensure_train_only_path(train_file: str | Path) -> Path:
     lowered_name = path.name.lower()
     if lowered_name != "train.jsonl":
         raise ValueError(
-            "Der quantum-1 Pilot-Tokenizer darf nur auf train.jsonl trainiert werden. "
+            "Der quantum-1 Tokenizer darf nur auf train.jsonl trainiert werden. "
             f"Erhalten: {path}"
         )
     if any(forbidden in str(path).lower() for forbidden in ("validation.jsonl", "test.jsonl")):
@@ -130,8 +132,14 @@ def write_sentencepiece_corpus(train_file: Path, text_field: str) -> tuple[Path,
     return Path(handle.name), document_count, text_bytes
 
 
-def remove_previous_outputs(output_dir: Path) -> None:
+def remove_previous_outputs(output_dir: Path, freeze_marker_file: str = FREEZE_MARKER_FILE) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    freeze_marker = output_dir / freeze_marker_file
+    if freeze_marker.exists():
+        raise FileExistsError(
+            f"Tokenizer ist eingefroren und wird nicht ueberschrieben: {freeze_marker}. "
+            "Lege fuer eine neue finale Version einen neuen Tokenizer-Ordner an."
+        )
     for filename in GENERATED_FILES:
         (output_dir / filename).unlink(missing_ok=True)
 
@@ -260,6 +268,7 @@ def write_manifest(
         "actual_vocab_size": int(sp.get_piece_size()),
         "future_llama_vocab_size": int(config["future_llama_config"]["vocab_size"]),
         "token_ids": token_ids(sp, all_special_tokens),
+        "expected_special_token_order": all_special_tokens,
         "base_special_tokens": base_tokens,
         "additional_special_tokens": chat_tokens,
         "sentencepiece_version": getattr(spm, "__version__", "unknown"),
@@ -291,13 +300,17 @@ def train_quantum_tokenizer(config_path: str | Path) -> Path:
     output_dir = Path(config["tokenizer"]["output_dir"])
     base_tokens, chat_tokens = get_special_tokens(config)
 
-    remove_previous_outputs(output_dir)
+    remove_previous_outputs(
+        output_dir,
+        str(config["tokenizer"].get("freeze_marker_file", FREEZE_MARKER_FILE)),
+    )
     corpus_file, document_count, text_bytes = write_sentencepiece_corpus(
         train_file=train_file,
         text_field=str(config["data"].get("text_field", "text")),
     )
     try:
-        LOGGER.info("Trainiere quantum-1 Pilot-Tokenizer aus %s", train_file)
+        tokenizer_name = config.get("project", {}).get("tokenizer_name", "quantum-1")
+        LOGGER.info("Trainiere %s Tokenizer aus %s", tokenizer_name, train_file)
         LOGGER.info("Trainingsdokumente: %d, Textbytes: %d", document_count, text_bytes)
         train_sentencepiece(corpus_file, output_dir, config, base_tokens, chat_tokens)
     finally:
@@ -315,7 +328,7 @@ def train_quantum_tokenizer(config_path: str | Path) -> Path:
         chat_tokens=chat_tokens,
     )
     LOGGER.info(
-        "Pilot-Tokenizer gespeichert in %s mit %d Tokens.",
+        "Tokenizer gespeichert in %s mit %d Tokens.",
         output_dir,
         manifest["actual_vocab_size"],
     )
@@ -323,7 +336,7 @@ def train_quantum_tokenizer(config_path: str | Path) -> Path:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trainiert den quantum-1 Pilot-SentencePiece-BPE-Tokenizer.")
+    parser = argparse.ArgumentParser(description="Trainiert einen quantum-1 SentencePiece-BPE-Tokenizer.")
     parser.add_argument(
         "--config",
         default="configs/quantum_1_tokenizer_pilot.yaml",

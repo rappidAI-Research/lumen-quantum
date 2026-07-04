@@ -115,13 +115,16 @@ def build_manifest(config_path: str | Path) -> dict:
 
     manifest = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "config_file": str(config_path),
         "dataset_name": config["project"]["dataset_name"],
         "dataset_version": config["manifest"]["version"],
+        "project_description": config["project"].get("description", ""),
         "source": config["source"],
         "download_date_utc": download_metadata.get("created_at_utc"),
         "license_hint": config["source"].get("license"),
         "seed": int(config["seed"]),
         "sampling_seed": int(config["sampling"]["split_seed"]),
+        "targets": config.get("targets", {}),
         "filter_rules": config["cleaning"],
         "document_counts": {
             name: files[name]["documents"] for name in ["raw", "cleaned", "train", "validation", "test"]
@@ -150,13 +153,16 @@ def build_manifest(config_path: str | Path) -> dict:
 
 
 def manifest_markdown(manifest: dict) -> str:
+    config_file = manifest.get("config_file", "configs/quantum_1_data.yaml")
+    title_suffix = "Final" if "final" in manifest.get("dataset_version", "").lower() else "Pilot"
     lines = [
-        "# Data Manifest: quantum-1 FineWeb2-HQ Pilot",
+        f"# Data Manifest: quantum-1 FineWeb2-HQ {title_suffix}",
         "",
         f"- Dataset: `{manifest['dataset_name']}`",
         f"- Version: `{manifest['dataset_version']}`",
         f"- Source: `{manifest['source']['hf_dataset']}` / `{manifest['source']['hf_subset']}`",
         f"- Revision: `{manifest['source']['revision']}`",
+        f"- Config: `{config_file}`",
         f"- Download UTC: `{manifest['download_date_utc']}`",
         f"- Seed: `{manifest['seed']}`",
         f"- Split seed: `{manifest['sampling_seed']}`",
@@ -192,11 +198,11 @@ def manifest_markdown(manifest: dict) -> str:
             "## Reproducibility",
             "",
             "```bash",
-            "python scripts/download_quantum_data.py --config configs/quantum_1_data.yaml",
-            "python scripts/clean_quantum_data.py --config configs/quantum_1_data.yaml",
-            "python scripts/sample_quantum_data.py --config configs/quantum_1_data.yaml",
-            "python scripts/inspect_quantum_data.py --config configs/quantum_1_data.yaml",
-            "python scripts/build_data_manifest.py --config configs/quantum_1_data.yaml",
+            f"python scripts/download_quantum_data.py --config {config_file}",
+            f"python scripts/clean_quantum_data.py --config {config_file}",
+            f"python scripts/sample_quantum_data.py --config {config_file}",
+            f"python scripts/inspect_quantum_data.py --config {config_file}",
+            f"python scripts/build_data_manifest.py --config {config_file}",
             "```",
         ]
     )

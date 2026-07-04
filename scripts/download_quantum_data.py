@@ -179,7 +179,7 @@ def run(config_path: str | Path) -> Path:
         "download": config["download"],
         "stats": stats,
         "output_file": str(output_file),
-        "note": "Streaming-Pilotdownload; kein vollstaendiger Dataset-Download.",
+        "note": "Streaming-Download mit konfigurierten Limits; kein vollstaendiger Dataset-Download.",
     }
     (raw_dir / "download_metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2),

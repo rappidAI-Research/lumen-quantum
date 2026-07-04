@@ -1,0 +1,101 @@
+project:
+  name: "Lumen Quantum"
+  dataset_name: "quantum-1-final-deu-v1"
+  description: "Finale v1-Datenbasis fuer quantum-1 aus gestreamtem deutschem FineWeb2-HQ."
+
+seed: 20260704
+
+source:
+  hf_dataset: "epfml/FineWeb2-HQ"
+  hf_subset: "deu_Latn"
+  split: "train"
+  revision: "main"
+  license: "ODC-By 1.0 family; siehe Dataset Card"
+  citation: "FineWeb2-HQ, EPFL Machine Learning and Optimization Laboratory"
+
+targets:
+  language: "de"
+  context_length: 512
+  train_tokens: 100000000
+  validation_tokens: 1000000
+  test_tokens: 1000000
+  token_count_source: "Nach Training von tokenizer/quantum-1 exakt aus tokenisierten .pt-Dateien berichten."
+
+paths:
+  raw_dir: "data/quantum/final/raw"
+  cleaned_dir: "data/quantum/final/cleaned"
+  manifest_dir: "data/quantum/final/manifests"
+  report_dir: "data/quantum/final/reports"
+
+download:
+  streaming: true
+  max_documents: 250000
+  max_raw_bytes: 6442450944
+  shuffle_buffer_size: 50000
+  text_fields:
+    - "text"
+    - "content"
+    - "raw_content"
+  url_fields:
+    - "url"
+    - "source_url"
+    - "warc_url"
+    - "metadata.url"
+
+cleaning:
+  min_chars: 200
+  max_chars: 40000
+  min_words: 40
+  max_repeated_char_run: 8
+  max_non_letter_ratio: 0.40
+  min_german_stopword_hits: 5
+  normalize_whitespace: true
+  remove_exact_duplicates: true
+  boilerplate_patterns:
+    - "cookie"
+    - "cookies akzeptieren"
+    - "datenschutz"
+    - "newsletter"
+    - "javascript"
+    - "registrieren"
+    - "einloggen"
+    - "warenkorb"
+    - "agb"
+
+sampling:
+  split_seed: 20260704
+  train_ratio: 0.98
+  validation_ratio: 0.01
+  test_ratio: 0.01
+
+manifest:
+  version: "quantum-1-final-deu-v1"
+  notes: "Finale v1-Datenbasis. Tokenizer-Training nur auf Train-Split; Validation/Test strikt getrennt."
+
+tokenizer:
+  dir: "tokenizer/quantum-1"
+  model_file: "tokenizer.model"
+  manifest_file: "tokenizer_manifest.json"
+
+input:
+  train_file: "data/quantum/final/cleaned/train.jsonl"
+  validation_file: "data/quantum/final/cleaned/validation.jsonl"
+  test_file: "data/quantum/final/cleaned/test.jsonl"
+  text_field: "text"
+  document_hash_field: "sha256"
+
+output:
+  dir: "data/quantum/final/tokenized"
+  manifest_file: "tokenization_manifest.json"
+  overwrite: false
+
+packing:
+  context_length: 512
+  add_eos_after_each_document: true
+  pad_remainder: true
+  drop_empty_documents: true
+
+limits:
+  train_max_tokens: 100000000
+  validation_max_tokens: 1000000
+  test_max_tokens: 1000000

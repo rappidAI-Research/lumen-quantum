@@ -515,6 +515,80 @@ python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yam
 
 Beim Start loggt das Skript Geraet, GPU-Name, VRAM, PyTorch-Version, CUDA-Version und Mixed Precision. Auf CUDA wird automatisch `bf16` bevorzugt, sonst `fp16`; auf CPU bleibt Mixed Precision aus.
 
+## 18. quantum-1 finale v1-Pipeline vorbereiten
+
+Der erfolgreiche Cloud-Pilot bleibt archiviert. Die finale v1-Pipeline nutzt getrennte Pfade und ueberschreibt keine Pilotdaten:
+
+```text
+data/quantum/final/
+tokenizer/quantum-1/
+models/quantum-1-base/
+```
+
+Finale Datenbasis erzeugen und vor Tokenisierung validieren:
+
+```powershell
+cd C:\LumenQuantum
+.\.venv\Scripts\Activate.ps1
+python scripts\download_quantum_data.py --config configs\quantum_1_final_data.yaml
+python scripts\clean_quantum_data.py --config configs\quantum_1_final_data.yaml
+python scripts\sample_quantum_data.py --config configs\quantum_1_final_data.yaml
+python scripts\inspect_quantum_data.py --config configs\quantum_1_final_data.yaml
+python scripts\build_data_manifest.py --config configs\quantum_1_final_data.yaml
+python scripts\validate_final_data.py --data-config configs\quantum_1_final_data.yaml --skip-tokenized
+```
+
+Finalen Tokenizer trainieren und einfrieren:
+
+```powershell
+python scripts\train_quantum_tokenizer.py --config configs\quantum_1_final_tokenizer.yaml
+python scripts\validate_final_tokenizer.py --config configs\quantum_1_final_tokenizer.yaml
+```
+
+Final tokenisieren und exakt berichten:
+
+```powershell
+python scripts\tokenize_quantum_data.py --config configs\quantum_1_final_tokenizer.yaml
+python scripts\validate_final_data.py --data-config configs\quantum_1_final_data.yaml --tokenization-config configs\quantum_1_final_tokenizer.yaml --require-tokenized
+```
+
+Finale Modellkonfiguration pruefen, ohne Training zu starten:
+
+```powershell
+python scripts\inspect_model_size.py --config configs\quantum_1_final_train.yaml
+python scripts\validate_quantum_model.py --config configs\quantum_1_final_train.yaml
+```
+
+RunPod/Linux entspricht denselben Befehlen mit `/` statt `\`:
+
+```bash
+cd /workspace/LumenQuantum
+source .venv/bin/activate
+python scripts/download_quantum_data.py --config configs/quantum_1_final_data.yaml
+python scripts/clean_quantum_data.py --config configs/quantum_1_final_data.yaml
+python scripts/sample_quantum_data.py --config configs/quantum_1_final_data.yaml
+python scripts/inspect_quantum_data.py --config configs/quantum_1_final_data.yaml
+python scripts/build_data_manifest.py --config configs/quantum_1_final_data.yaml
+python scripts/validate_final_data.py --data-config configs/quantum_1_final_data.yaml --skip-tokenized
+python scripts/train_quantum_tokenizer.py --config configs/quantum_1_final_tokenizer.yaml
+python scripts/validate_final_tokenizer.py --config configs/quantum_1_final_tokenizer.yaml
+python scripts/tokenize_quantum_data.py --config configs/quantum_1_final_tokenizer.yaml
+python scripts/validate_final_data.py --data-config configs/quantum_1_final_data.yaml --tokenization-config configs/quantum_1_final_tokenizer.yaml --require-tokenized
+python scripts/inspect_model_size.py --config configs/quantum_1_final_train.yaml
+python scripts/validate_quantum_model.py --config configs/quantum_1_final_train.yaml
+```
+
+Nicht in Git gehoeren:
+
+```text
+data/quantum/final/
+tokenizer/quantum-1/
+models/quantum-1-base/
+logs/
+```
+
+`configs/quantum_1_final_train.yaml` setzt `training.max_steps: 0`. Fuer echtes Training muss spaeter bewusst ein anderes Schrittlimit gesetzt werden; die Pilotgewichte werden nicht uebernommen, weil der finale Tokenizer neu ist.
+
 ## Hinweise
 
 - Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.
