@@ -1,0 +1,64 @@
+project:
+  name: "Lumen Quantum"
+  model_name: "quantum-1.6-pilot"
+  version: "v1.6.0"
+  description: "Reproduzierbare Diagnose fuer schlechte Generationen von quantum-1.6-pilot."
+
+seed: 20260705
+
+paths:
+  pytorch_checkpoint_dir: "models/quantum-1.6-pilot/final"
+  tokenizer_dir: "tokenizer/quantum-1"
+  gguf_file: "exports/quantum-1.6-pilot-v1.6.0-f16.gguf"
+  llama_cpp_dir: "tools/llama.cpp"
+  output_dir: "data/diagnostics/quantum-1.6-pilot"
+  android_capture_file: "data/diagnostics/quantum-1.6-pilot/android_capture.jsonl"
+
+expected:
+  vocab_size: 16384
+  parameter_count: 49295872
+  tokenizer_model_file: "tokenizer.model"
+  context_length: 512
+
+prompts:
+  - "Berlin ist"
+  - "Ein Computer ist"
+  - "Die deutsche Sprache"
+  - "Nutzer: Hallo\nLumen:"
+
+generation:
+  max_new_tokens: 64
+  modes:
+    greedy:
+      label: "greedy_deterministic"
+      do_sample: false
+      temperature: 0.0
+      top_p: 1.0
+      top_k: 0
+    sampling:
+      label: "controlled_sampling"
+      do_sample: true
+      temperature: 0.7
+      top_p: 0.9
+      top_k: 40
+
+compare:
+  identical_threshold: 1.0
+  similar_threshold: 0.72
+
+android:
+  expected_model_id: "quantum-1.6-pilot-v1.6.0-f16"
+  expected_ui_model_id: "quantum-1.6-pilot-v1.6.0-f16"
+  require_same_gguf_sha256_as_terminal: true
+  require_same_file_size_as_terminal: true
+  require_ui_loaded_model_match: true
+  required_capture_fields:
+    - "model_id"
+    - "ui_active_model_id"
+    - "local_model_path"
+    - "file_size_bytes"
+    - "sha256"
+    - "prompt"
+    - "mode"
+    - "sampling"
+    - "raw_stream_fragments"
