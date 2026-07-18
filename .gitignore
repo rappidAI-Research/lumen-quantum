@@ -53,3 +53,8 @@ data/**
 !data/evals/quantum_1_base_v1.jsonl
 data/echelon/tokenizer_training/training_text.txt
 logs/quantum-1-echelon/
+data/echelon/smoke/
+data/echelon/production/
+data/echelon/production_test/
+data/echelon/resume_test/
+logs/quantum-1-echelon/garden_*.log

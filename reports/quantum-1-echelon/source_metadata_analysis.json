@@ -1,0 +1,99 @@
+{
+  "sample_size": 5000,
+  "languages": {
+    "deu": 5000
+  },
+  "language_scripts": {
+    "Latn": 5000
+  },
+  "language_score": {
+    "minimum": 0.8257789015769958,
+    "p05": 0.9817860722541809,
+    "p25": 0.9946625232696533,
+    "median": 0.9971921443939209,
+    "p75": 0.9984663724899292,
+    "p95": 0.9993740916252136,
+    "maximum": 0.9999992847442627
+  },
+  "quality_score": {
+    "minimum": 0.04502185434103012,
+    "p05": 0.050760697573423386,
+    "p25": 0.08336314558982849,
+    "median": 0.17989622056484222,
+    "p75": 0.4711790382862091,
+    "p95": 0.9366223216056824,
+    "maximum": 0.9998829364776611
+  },
+  "minhash_cluster_size": {
+    "minimum": 1.0,
+    "p05": 1.0,
+    "p25": 19.0,
+    "median": 38.0,
+    "p75": 66.0,
+    "p95": 614.0,
+    "maximum": 1142715.0
+  },
+  "text_length": {
+    "minimum": 286.0,
+    "p05": 414.0,
+    "p25": 975.0,
+    "median": 1964.5,
+    "p75": 4180.0,
+    "p95": 13815.0,
+    "maximum": 188161.0
+  },
+  "missing_fields": {},
+  "examples": [
+    {
+      "language": "deu",
+      "language_script": "Latn",
+      "language_score": 0.9983135461807251,
+      "quality_score": 0.24594922363758087,
+      "minhash_cluster_size": 34,
+      "top_langs": "{\"deu_Latn_score\": 0.9983135461807251}",
+      "url": "http://buzzaldrins.wordpress.com/2012/02/",
+      "text_preview": "Bücher sind mein Leben. Am liebsten lese ich zeitgenössische Literatur und zwar alles, was ich in die Finger bekommen kann. Ich lese jedoch nicht nur, sondern schreibe auch noch gerne über das, was ich gelesen habe. Das möchte ich hier tun. Auf den Namen \"Buzz Aldrin\" bin ich durch ein Buch von Joha"
+    },
+    {
+      "language": "deu",
+      "language_script": "Latn",
+      "language_score": 0.9983403086662292,
+      "quality_score": 0.10288415104150772,
+      "minhash_cluster_size": 1,
+      "top_langs": "{\"deu_Latn_score\": 0.9983403086662292}",
+      "url": "http://farbundstil.de/kleidung/",
+      "text_preview": "Welcher farbtyp bin ich? Wissen Sie es? Die Farbtypenlehre kennt vier verschiedene Farbtypen: -Frühling -Sommer -Herbst -Winter Farben die Wintertypen auszeichnen sind sehr kräftig. Z.B. ein leuchtendes Rot aber auch ... Sie möchten im privaten oder geschäftlichen Umfeld erfolgreicher werden? Dann e"
+    },
+    {
+      "language": "deu",
+      "language_script": "Latn",
+      "language_score": 0.996035099029541,
+      "quality_score": 0.18169721961021423,
+      "minhash_cluster_size": 116,
+      "top_langs": "{\"deu_Latn_score\": 0.996035099029541}",
+      "url": "http://german.stackexchange.com/questions/5222/zusammengesetzes-wort-bindestrich-oder-nicht/5228",
+      "text_preview": "Wie ist die korrekte Schreibweise für zusammengesetzte Wörter. Werden diese mit einem Bindestrich getrennt oder nicht? Mir geht es vor allem um Leichtathletik-Verein / Leichtathletikverein oder Leichtathletik-Zentrum / Leichtathletikzentrum. Bei Wikipedia finde ich beide Schreibweisen gemixt. Auch a"
+    },
+    {
+      "language": "deu",
+      "language_script": "Latn",
+      "language_score": 0.998899519443512,
+      "quality_score": 0.06562891602516174,
+      "minhash_cluster_size": 213,
+      "top_langs": "{\"deu_Latn_score\": 0.998899519443512}",
+      "url": "http://www.braunschweiger-zeitung.de/nachrichten/Thema_des_Tages/lage-in-nahost-eskaliert-luftalarm-in-tel-aviv-id802538.html",
+      "text_preview": "Lage in Nahost eskaliert: Luftalarm in Tel Aviv Gaza/Tel Aviv Die Furcht vor einem neuen Nahost-Krieg wächst. Erstmals seit dem Golfkrieg 1991, als der Irak Scud-Raketen auf Israel abschoss, heulten am Donnerstag die Luftalarm-Sirenen in Tel Aviv. Zugleich war eine dumpfe laute Explosion zu hören.15"
+    },
+    {
+      "language": "deu",
+      "language_script": "Latn",
+      "language_score": 0.9984217882156372,
+      "quality_score": 0.19969207048416138,
+      "minhash_cluster_size": 87,
+      "top_langs": "{\"deu_Latn_score\": 0.9984217882156372}",
+      "url": "http://www.cycling4fans.de/index.php?id=4472",
+      "text_preview": "Deutsche Ärzte und Doping >>> Historie westdeutscher Sportärzte, Überblick Joseph Keul Prof. Dr. Joseph Keul leitete die Abteilung Sportmedizin an der Universitätklinik Freiburg seitdem sie 1974 eine selbstständige Einrichtung wurde. Ab 1960 fungierte Joseph Keul als Sportarzt bei den Olympischen Sp"
+    }
+  ],
+  "note": "Embeddings wurden bewusst nicht geladen oder ausgegeben."
+}

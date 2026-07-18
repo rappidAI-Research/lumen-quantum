@@ -1,0 +1,50 @@
+source:
+  dataset: epfml/FineWeb2-HQ
+  configuration: deu_Latn
+  split: train
+  streaming: true
+  revision: c0c06e94fd3a44ae9e802b2b0fc533817601eb5e
+tokenizer:
+  model: tokenizer/echelon/quantum-1-echelon.model
+  context_length: 2048
+  dtype: uint16
+filters:
+  minimum_characters: 300
+  maximum_characters: 100000
+  maximum_url_ratio: 0.05
+  maximum_digit_ratio: 0.2
+  maximum_symbol_ratio: 0.2
+  minimum_words: 60
+  minimum_alpha_ratio: 0.55
+  maximum_duplicate_line_ratio: 0.25
+  maximum_repeated_5gram_ratio: 0.12
+  maximum_boilerplate_matches: 2
+splits:
+  train_buckets: 7980
+  validation_buckets: 10
+  test_buckets: 10
+  total_buckets: 8000
+output:
+  root: data/echelon/production
+  manifest: data/echelon/production/manifests/garden_production.json
+  checkpoint: data/echelon/production/checkpoints/garden_state.json
+seed: 20260718
+near_duplicate:
+  enabled: false
+  reason: FineWeb2 wurde bereits global je Sprache mit MinHash dedupliziert; FineWeb2-HQ
+    ist eine Teilmenge davon.
+metadata_filters:
+  required_language: deu
+  required_language_script: Latn
+  minimum_language_score: 0.98
+  minimum_quality_score: 0.25
+  maximum_minhash_cluster_size: 500
+targets:
+  train_tokens: 8000000000
+  validation_tokens: 10000000
+  test_tokens: 10000000
+  tokens_per_shard: 100000000
+runtime:
+  checkpoint_every_documents: 100000
+  progress_every_documents: 10000
+  resume: true

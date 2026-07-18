@@ -1,0 +1,41 @@
+source:
+  dataset: epfml/FineWeb2-HQ
+  configuration: deu_Latn
+  split: train
+  streaming: true
+  maximum_documents_seen: 5000
+tokenizer:
+  model: tokenizer/echelon/quantum-1-echelon.model
+  context_length: 2048
+  dtype: uint16
+filters:
+  minimum_characters: 300
+  maximum_characters: 100000
+  maximum_url_ratio: 0.05
+  maximum_digit_ratio: 0.2
+  maximum_symbol_ratio: 0.2
+  minimum_words: 60
+  minimum_alpha_ratio: 0.55
+  maximum_duplicate_line_ratio: 0.25
+  maximum_repeated_5gram_ratio: 0.12
+  maximum_boilerplate_matches: 2
+splits:
+  train_buckets: 998
+  validation_buckets: 1
+  test_buckets: 1
+  total_buckets: 1000
+output:
+  root: data/echelon/smoke
+  manifest: data/echelon/smoke/manifests/garden_smoke.json
+seed: 20260718
+near_duplicate:
+  enabled: true
+  simhash_bits: 64
+  bands: 4
+  maximum_hamming_distance: 3
+metadata_filters:
+  required_language: deu
+  required_language_script: Latn
+  minimum_language_score: 0.98
+  minimum_quality_score: 0.25
+  maximum_minhash_cluster_size: 500

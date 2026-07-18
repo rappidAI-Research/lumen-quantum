@@ -1,0 +1,43 @@
+project:
+  model_name: quantum-1-echelon-base
+  seed: 20260718
+
+source:
+  dataset: epfml/FineWeb2-HQ
+  configuration: deu_Latn
+  split: train
+  streaming: true
+
+tokenizer:
+  model: tokenizer/echelon/quantum-1-echelon.model
+  vocab_size: 32768
+
+targets:
+  train_tokens: 8000000000
+  validation_tokens: 10000000
+  test_tokens: 10000000
+  context_length: 2048
+  token_dtype: uint16
+  tokens_per_shard: 100000000
+
+splits:
+  method: stable_sha256_hash
+  train_fraction: 0.9975
+  validation_fraction: 0.00125
+  test_fraction: 0.00125
+
+storage:
+  total_budget_gb: 300
+  raw_cache_limit_gb: 40
+  cleaned_data_limit_gb: 80
+  tokenized_data_limit_gb: 30
+  training_artifacts_limit_gb: 120
+  safety_buffer_gb: 30
+
+rules:
+  reuse_quantum_data: false
+  exact_deduplication_required: true
+  near_duplicate_filter_required: true
+  boilerplate_filter_required: true
+  repeated_ngram_audit_required: true
+  manifests_required: true
