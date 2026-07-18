@@ -1,0 +1,42 @@
+{
+  "german_general": {
+    "characters": 73,
+    "tokens": 9,
+    "tokens_per_character": 0.1233
+  },
+  "german_umlauts": {
+    "characters": 59,
+    "tokens": 15,
+    "tokens_per_character": 0.2542
+  },
+  "english": {
+    "characters": 61,
+    "tokens": 16,
+    "tokens_per_character": 0.2623
+  },
+  "code": {
+    "characters": 59,
+    "tokens": 34,
+    "tokens_per_character": 0.5763
+  },
+  "markdown": {
+    "characters": 50,
+    "tokens": 22,
+    "tokens_per_character": 0.44
+  },
+  "json": {
+    "characters": 52,
+    "tokens": 29,
+    "tokens_per_character": 0.5577
+  },
+  "chat": {
+    "characters": 184,
+    "tokens": 56,
+    "tokens_per_character": 0.3043
+  },
+  "unicode": {
+    "characters": 35,
+    "tokens": 38,
+    "tokens_per_character": 1.0857
+  }
+}

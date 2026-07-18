@@ -1,0 +1,144 @@
+{
+  "total_cases": 23,
+  "failed_cases": 0,
+  "results": [
+    {
+      "input": "",
+      "tokens": 0,
+      "decoded": "",
+      "exact_match": true
+    },
+    {
+      "input": " ",
+      "tokens": 2,
+      "decoded": " ",
+      "exact_match": true
+    },
+    {
+      "input": "\n",
+      "tokens": 2,
+      "decoded": "\n",
+      "exact_match": true
+    },
+    {
+      "input": "\r\n",
+      "tokens": 3,
+      "decoded": "\r\n",
+      "exact_match": true
+    },
+    {
+      "input": "\t",
+      "tokens": 2,
+      "decoded": "\t",
+      "exact_match": true
+    },
+    {
+      "input": "Hallo Welt",
+      "tokens": 2,
+      "decoded": "Hallo Welt",
+      "exact_match": true
+    },
+    {
+      "input": "ä ö ü Ä Ö Ü ß",
+      "tokens": 8,
+      "decoded": "ä ö ü Ä Ö Ü ß",
+      "exact_match": true
+    },
+    {
+      "input": "„Deutsche Anführungszeichen“ und ‚einfache‘",
+      "tokens": 12,
+      "decoded": "„Deutsche Anführungszeichen“ und ‚einfache‘",
+      "exact_match": true
+    },
+    {
+      "input": "Berlin ist die Hauptstadt von Deutschland.",
+      "tokens": 7,
+      "decoded": "Berlin ist die Hauptstadt von Deutschland.",
+      "exact_match": true
+    },
+    {
+      "input": "Zeile 1\nZeile 2\nZeile 3",
+      "tokens": 13,
+      "decoded": "Zeile 1\nZeile 2\nZeile 3",
+      "exact_match": true
+    },
+    {
+      "input": "Tabs:\tSpalte 1\tSpalte 2",
+      "tokens": 13,
+      "decoded": "Tabs:\tSpalte 1\tSpalte 2",
+      "exact_match": true
+    },
+    {
+      "input": "Emoji: 😀 🚀 ❤️ 🧠",
+      "tokens": 21,
+      "decoded": "Emoji: 😀 🚀 ❤️ 🧠",
+      "exact_match": true
+    },
+    {
+      "input": "UTF-8: café, naïve, façade, İstanbul",
+      "tokens": 21,
+      "decoded": "UTF-8: café, naïve, façade, İstanbul",
+      "exact_match": true
+    },
+    {
+      "input": "{\"name\":\"Jonas\",\"project\":\"quantum-1-echelon\"}",
+      "tokens": 22,
+      "decoded": "{\"name\":\"Jonas\",\"project\":\"quantum-1-echelon\"}",
+      "exact_match": true
+    },
+    {
+      "input": "# Überschrift\n\n- Punkt 1\n- Punkt 2",
+      "tokens": 13,
+      "decoded": "# Überschrift\n\n- Punkt 1\n- Punkt 2",
+      "exact_match": true
+    },
+    {
+      "input": "def add(a, b):\n    return a + b",
+      "tokens": 16,
+      "decoded": "def add(a, b):\n    return a + b",
+      "exact_match": true
+    },
+    {
+      "input": "<|system|>\nDu bist ein hilfreicher Assistent.\n<|end|>",
+      "tokens": 12,
+      "decoded": "<|system|>\nDu bist ein hilfreicher Assistent.\n<|end|>",
+      "exact_match": true
+    },
+    {
+      "input": "<|user|>\nErkläre Quantenphysik einfach.\n<|end|>",
+      "tokens": 13,
+      "decoded": "<|user|>\nErkläre Quantenphysik einfach.\n<|end|>",
+      "exact_match": true
+    },
+    {
+      "input": "<|assistant|>\nQuantenphysik beschreibt...\n<|end|>",
+      "tokens": 11,
+      "decoded": "<|assistant|>\nQuantenphysik beschreibt...\n<|end|>",
+      "exact_match": true
+    },
+    {
+      "input": "<|system|>\nDu bist hilfreich.\n<|end|>\n<|user|>\nHallo!\n<|end|>\n<|assistant|>\nHallo, wie kann ich helfen?\n<|end|>",
+      "tokens": 30,
+      "decoded": "<|system|>\nDu bist hilfreich.\n<|end|>\n<|user|>\nHallo!\n<|end|>\n<|assistant|>\nHallo, wie kann ich helfen?\n<|end|>",
+      "exact_match": true
+    },
+    {
+      "input": "1234567890",
+      "tokens": 11,
+      "decoded": "1234567890",
+      "exact_match": true
+    },
+    {
+      "input": "https://example.com/test?q=ä",
+      "tokens": 11,
+      "decoded": "https://example.com/test?q=ä",
+      "exact_match": true
+    },
+    {
+      "input": "E-Mail: test@example.com",
+      "tokens": 9,
+      "decoded": "E-Mail: test@example.com",
+      "exact_match": true
+    }
+  ]
+}

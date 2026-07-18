@@ -51,3 +51,5 @@ data/**
 !data/
 !data/evals/
 !data/evals/quantum_1_base_v1.jsonl
+data/echelon/tokenizer_training/training_text.txt
+logs/quantum-1-echelon/
