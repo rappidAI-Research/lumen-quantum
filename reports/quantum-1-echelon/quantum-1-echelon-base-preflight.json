@@ -1,0 +1,45 @@
+{
+  "model_name": "quantum-1-echelon-base",
+  "architecture": "llama_causal_decoder",
+  "total_parameters": 506333440,
+  "trainable_parameters": 506333440,
+  "manual_formula_parameters": 506333440,
+  "target_parameters": 500000000,
+  "accepted_range": {
+    "minimum": 475000000,
+    "maximum": 525000000
+  },
+  "in_target_range": true,
+  "architecture_config": {
+    "model_name": "quantum-1-echelon-base",
+    "architecture": "llama_causal_decoder",
+    "vocab_size": 32768,
+    "context_length": 2048,
+    "hidden_size": 1280,
+    "intermediate_size": 3584,
+    "num_hidden_layers": 26,
+    "num_attention_heads": 20,
+    "num_key_value_heads": 5,
+    "hidden_act": "silu",
+    "rms_norm_eps": 1e-05,
+    "rope_theta": 10000.0,
+    "attention_bias": false,
+    "mlp_bias": false,
+    "tie_word_embeddings": true,
+    "initializer_range": 0.02,
+    "use_cache": true,
+    "dtype_target": "bf16",
+    "pad_token_id": 0,
+    "bos_token_id": 1,
+    "eos_token_id": 2
+  },
+  "memory_estimates": {
+    "fp32_weights_gib": 1.886,
+    "bf16_weights_gib": 0.943,
+    "bf16_gradients_gib": 0.943,
+    "fp32_master_weights_gib": 1.886,
+    "adamw_moments_gib": 3.772,
+    "mixed_precision_adamw_static_total_gib": 7.545
+  },
+  "memory_note": "Schätzungen enthalten keine Aktivierungen, CUDA-Workspaces, Allocator-Fragmentierung oder temporären Tensoren."
+}

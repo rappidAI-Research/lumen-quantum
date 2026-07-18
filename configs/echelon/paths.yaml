@@ -1,0 +1,21 @@
+project:
+  family_name: quantum-1-echelon
+  base_model_name: quantum-1-echelon-base
+  chat_model_name: quantum-1-echelon-chat
+
+paths:
+  configs: configs/echelon
+  data: data/echelon
+  tokenizer: tokenizer/echelon
+  base_models: models/quantum-1-echelon/base
+  chat_models: models/quantum-1-echelon/chat
+  logs: logs/quantum-1-echelon
+  reports: reports/quantum-1-echelon
+  exports: exports/quantum-1-echelon
+
+forbidden_reuse:
+  - models/quantum-1-base
+  - models/quantum-1.6-pilot
+  - tokenizer/quantum-1
+  - tokenizer/quantum-1-pilot
+  - data/quantum
