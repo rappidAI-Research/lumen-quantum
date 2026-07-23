@@ -1,4 +1,7 @@
-# quantum-1.6-pilot — Continued Pretraining
+# rappidAI Quantum — quantum-1.6-pilot continued pretraining
+
+> Historical pilot procedure from the earlier Lumen project phase. The current
+> project identity is rappidAI Quantum; this is not an Echelon-family run.
 
 Diese Version setzt das Training von **quantum-1-pilot** fort (weights-only Continued
 Pretraining). Gleiche Architektur, gleicher eingefrorener Tokenizer, gleiche

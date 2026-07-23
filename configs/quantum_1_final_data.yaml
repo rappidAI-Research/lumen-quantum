@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   dataset_name: "quantum-1-final-deu-v1"
   description: "Finale v1-Datenbasis fuer quantum-1 aus gestreamtem deutschem FineWeb2-HQ."
 

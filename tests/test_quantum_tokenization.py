@@ -27,7 +27,7 @@ def _text(index: int) -> str:
 
 def _tokenizer_config(tmp_path: Path, train_file: Path, tokenizer_dir: Path) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "tokenizer_name": "quantum-1-pilot-test"},
+        "project": {"name": "rappidAI Quantum", "tokenizer_name": "quantum-1-pilot-test"},
         "seed": 123,
         "data": {"train_file": str(train_file), "text_field": "text"},
         "tokenizer": {
@@ -64,9 +64,15 @@ def _tokenizer_config(tmp_path: Path, train_file: Path, tokenizer_dir: Path) -> 
     return path
 
 
-def _pipeline_config(tmp_path: Path, tokenizer_dir: Path, cleaned_dir: Path, output_dir: Path, train_limit: int = 2000) -> Path:
+def _pipeline_config(
+    tmp_path: Path,
+    tokenizer_dir: Path,
+    cleaned_dir: Path,
+    output_dir: Path,
+    train_limit: int = 2000,
+) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "dataset_name": "quantum-1-pilot-tokenized-test"},
+        "project": {"name": "rappidAI Quantum", "dataset_name": "quantum-1-pilot-tokenized-test"},
         "seed": 123,
         "tokenizer": {
             "dir": str(tokenizer_dir),
@@ -107,12 +113,22 @@ def prepared_pipeline(tmp_path):
     cleaned_dir = tmp_path / "data" / "quantum" / "cleaned"
     tokenizer_dir = tmp_path / "tokenizer" / "quantum-1-pilot"
     output_dir = tmp_path / "data" / "quantum" / "tokenized" / "pilot"
-    train_records = [{"id": f"train-{index}", "sha256": f"train-hash-{index}", "text": _text(index)} for index in range(10)]
+    train_records = [
+        {"id": f"train-{index}", "sha256": f"train-hash-{index}", "text": _text(index)}
+        for index in range(10)
+    ]
     validation_records = [
-        {"id": f"validation-{index}", "sha256": f"validation-hash-{index}", "text": _text(index + 20)}
+        {
+            "id": f"validation-{index}",
+            "sha256": f"validation-hash-{index}",
+            "text": _text(index + 20),
+        }
         for index in range(3)
     ]
-    test_records = [{"id": f"test-{index}", "sha256": f"test-hash-{index}", "text": _text(index + 40)} for index in range(3)]
+    test_records = [
+        {"id": f"test-{index}", "sha256": f"test-hash-{index}", "text": _text(index + 40)}
+        for index in range(3)
+    ]
     _write_jsonl(cleaned_dir / "train.jsonl", train_records)
     _write_jsonl(cleaned_dir / "validation.jsonl", validation_records)
     _write_jsonl(cleaned_dir / "test.jsonl", test_records)

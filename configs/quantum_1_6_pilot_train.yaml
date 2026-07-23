@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   model_name: "quantum-1.6-pilot"
   run_name: "quantum-1.6-pilot-continued-pretraining-v1"
   description: "Weights-only Continued Pretraining von quantum-1.6-pilot, initialisiert aus quantum-1-pilot (models/quantum-1-base/final). Gleiche Architektur, gleicher Tokenizer, gleiche Kontextlaenge 512."

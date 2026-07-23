@@ -1,86 +1,68 @@
-# Project Spec: Lumen Quantum
+# Project specification: rappidAI Quantum
 
-## Ziel
+## Scope
 
-Lumen ist der Name des spaeteren deutschsprachigen Assistenten. Dieses Repository dient dazu, die komplette Trainingspipeline fuer ein eigenes Decoder-only-Sprachmodell von Grund auf aufzubauen.
+rappidAI Quantum provides reproducible pipelines for preparing data, training
+tokenizers, developing, evaluating, and exporting compact language models. It
+is the technical core repository. The website is a separate publication and
+research-index surface.
 
-## Modellfamilie
+## Identity and history
 
-- `smoke-5m`: sehr kleines Smoke-Test-Modell mit ungefaehr 5 Millionen Parametern.
-- `quantum-1`: spaeteres echtes Modell mit etwa 50 Millionen Parametern.
+- **Current project identity:** rappidAI Quantum.
+- **Historical name:** Lumen was an earlier internal/project name and remains in
+  legacy paths and source identifiers.
+- **Pilot stages:** `quantum-1-pilot` and `quantum-1.6-pilot` are independently
+  pretrained experimental stages in the historical pilot line.
+- **Strategic line:** `quantum-1-echelon` is the current strategic model line.
+- **Echelon stages:** Echelon Base and Echelon Chat are variants or stages within
+  that line, not separate families.
 
-`quantum-1` wird erst gebaut, wenn der Smoke-Test vollstaendig funktioniert.
+Repository, file, and public-model renames require a separate compatibility and
+redirect plan.
 
-## Harte Regel: Keine vortrainierten Modellgewichte
+## Design principles
 
-Dieses Projekt darf niemals vortrainierte Modellgewichte laden.
+1. Separate verified evidence, publisher reports, configuration targets, and
+   incomplete work.
+2. Pin code, dataset, upstream-model, tokenizer, and tool revisions for releases.
+3. Keep data, weights, tokenizers, logs, secrets, and large artifacts out of Git.
+4. Make CPU-only validation the safe default; classify network, slow, and GPU
+   tests explicitly.
+5. Treat model/data licensing and security as independent release gates.
+6. Preserve local checkpoint/resume workflows across Windows, Linux, and macOS.
 
-- Kein `from_pretrained` fuer Modelle.
-- Keine externen Modellgewichte.
-- Keine API-Modelle.
-- Keine versteckten Initialisierungen aus bestehenden Checkpoints, ausser lokalen Checkpoints, die mit diesem Projekt selbst erzeugt wurden.
+## Weight-origin rule
 
-Das Modell muss mit zufaelligen Gewichten starten. Lokale Checkpoints duerfen nur zum Fortsetzen eigener Trainingslaeufe genutzt werden.
+The historical pilot line deliberately created models from random weights and
+did not load third-party pretrained weights. That remains a requirement for
+reproducing those experiments.
 
-## Reproduzierbarkeit
+It is not a universal restriction on future fine-tuning. Every derived model
+must record:
 
-Jede Trainingsversion muss reproduzierbar dokumentiert werden. Dazu gehoeren:
+- upstream model and exact immutable revision;
+- upstream license and any acceptable-use terms;
+- tokenizer identity and revision;
+- changed architecture or vocabulary behavior;
+- training data terms and provenance; and
+- a release license compatible with all inputs.
 
-- YAML-Konfiguration
-- Modellarchitektur
-- Tokenizer-Version und Tokenizer-Metadaten
-- Seed
-- Datensatzversion oder Rohdatenstand
-- Train/Validation/Test-Split
-- Kontextlaenge
-- Trainingsparameter
-- Checkpoint-Pfade
-- Datum und Zweck des Trainingslaufs
+## Technical contract
 
-Die Smoke-Version schreibt Metadaten in:
+- Python: 3.11 or 3.12.
+- Configurations: YAML, validated before work begins.
+- Models: Llama-style causal decoders constructed from explicit config.
+- Tokenizers: local SentencePiece artifacts with checksums and special-token IDs.
+- Checkpoints: model, optimizer, scheduler, RNG, step, epoch, and configuration.
+- Evaluation: validation loss/perplexity plus fixed completion prompts; raw output
+  is required before promoting claims.
+- GGUF: exported through an explicit external llama.cpp checkout.
 
-- `tokenizer/smoke/tokenizer_metadata.json`
-- `data/processed/split_metadata.json`
-- `data/tokenized/metadata.json`
-- `models/smoke/final/training_metadata.json`
+## Release gates
 
-## Smoke-Test-Pipeline
+No release may be tagged until CI passes, source-license ownership is approved,
+README and model cards are accurate, the external llama.cpp path is verified,
+artifact terms are explicit, and the maintainer approves the release checklist.
 
-Der erste funktionsfaehige Ablauf ist:
-
-```text
-Textdatei in data/raw/
--> Tokenizer trainieren
--> Daten vorbereiten und tokenisieren
--> kleines Modell trainieren
--> Checkpoint speichern
--> Training fortsetzen
--> Text im Terminal generieren
--> einfache Evaluation durchfuehren
-```
-
-## Technische Basis
-
-- Python
-- PyTorch
-- Hugging Face Transformers
-- Hugging Face Tokenizers
-- Accelerate
-- YAML-Konfiguration
-- Logging
-- Checkpoints mit Resume-Funktion
-- CPU- und CUDA-Unterstuetzung
-
-## Smoke-Modell
-
-- Architektur: `LlamaForCausalLM`
-- Konfiguration: `LlamaConfig`
-- Initialisierung: zufaellig
-- Kontextlaenge: 256 Tokens
-- Tokenizer: eigener BPE-Tokenizer
-- Sprache: Deutsch
-- Zweck: Pipeline pruefen, nicht Qualitaet maximieren
-
-## Naechster Meilenstein
-
-Erst wenn der Smoke-Test stabil laeuft, wird `quantum-1` entworfen. Dann muessen Datensatz, Tokenizer, Modellgroesse, Trainingsdauer, Evaluationsverfahren und Checkpoint-Strategie neu versioniert und dokumentiert werden.
+The next candidate is `v0.1.0-alpha`; it is prepared but not tagged.

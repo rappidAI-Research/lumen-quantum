@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   tokenizer_name: "quantum-1-pilot"
   description: "Pilot-Tokenizer fuer quantum-1; noch nicht der finale eingefrorene Tokenizer."
 

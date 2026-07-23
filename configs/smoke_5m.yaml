@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   run_name: "smoke-5m"
   description: "Kleines Decoder-only-Smoke-Test-Modell fuer die Lumen-Pipeline."
 

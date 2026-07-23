@@ -106,7 +106,10 @@ def quantum_model_config(tmp_path_factory) -> Path:
         minloglevel=1,
     )
     sp = spm.SentencePieceProcessor(model_file=str(tokenizer_dir / "tokenizer.model"))
-    token_ids = {token: int(sp.piece_to_id(token)) for token in ["<unk>", "<s>", "</s>", "<pad>", "<|system|>", "<|user|>", "<|assistant|>"]}
+    token_ids = {
+        token: int(sp.piece_to_id(token))
+        for token in ["<unk>", "<s>", "</s>", "<pad>", "<|system|>", "<|user|>", "<|assistant|>"]
+    }
     (tokenizer_dir / "tokenizer_config.json").write_text(
         json.dumps(
             {
@@ -160,7 +163,7 @@ def quantum_model_config(tmp_path_factory) -> Path:
     )
 
     config = {
-        "project": {"name": "Lumen Quantum", "model_name": "quantum-1-base"},
+        "project": {"name": "rappidAI Quantum", "model_name": "quantum-1-base"},
         "seed": 123,
         "tokenizer": {"dir": str(tokenizer_dir), "manifest_file": "tokenizer_manifest.json"},
         "data": {
@@ -190,7 +193,9 @@ def quantum_model_config(tmp_path_factory) -> Path:
         "training": {"output_dir": str(root / "models" / "quantum-1-base")},
     }
     config_path = root / "quantum_1_base_pilot.yaml"
-    config_path.write_text(yaml.safe_dump(config, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    config_path.write_text(
+        yaml.safe_dump(config, sort_keys=False, allow_unicode=True), encoding="utf-8"
+    )
     return config_path
 
 
@@ -212,10 +217,12 @@ def test_quantum_forward_pass_and_tokenizer_compatibility(quantum_model_config):
     assert llama_config.bos_token_id == 1
     assert llama_config.eos_token_id == 2
     assert llama_config.pad_token_id == 3
-    assert getattr(llama_config, "unk_token_id") == 0
+    assert llama_config.unk_token_id == 0
 
     input_ids = torch.randint(0, llama_config.vocab_size, (1, 8), dtype=torch.long)
-    outputs = model(input_ids=input_ids, attention_mask=torch.ones_like(input_ids), labels=input_ids)
+    outputs = model(
+        input_ids=input_ids, attention_mask=torch.ones_like(input_ids), labels=input_ids
+    )
 
     assert outputs.loss is not None
     assert torch.isfinite(outputs.loss)

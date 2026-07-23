@@ -17,9 +17,10 @@ import re
 import subprocess
 import sys
 from collections import Counter
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable
+from typing import Any
 
 import torch
 import yaml
@@ -28,7 +29,9 @@ from transformers import LlamaConfig, LlamaForCausalLM
 try:
     import sentencepiece as spm
 except ImportError as exc:  # pragma: no cover - depends on local environment.
-    raise ImportError("sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt") from exc
+    raise ImportError(
+        "sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt"
+    ) from exc
 
 try:
     import transformers
@@ -117,7 +120,9 @@ def tokenizer_model_path(tokenizer_dir: str | Path, filename: str = "tokenizer.m
     return path
 
 
-def compare_tokenizer_files(model_dir: str | Path, tokenizer_dir: str | Path, filename: str = "tokenizer.model") -> dict:
+def compare_tokenizer_files(
+    model_dir: str | Path, tokenizer_dir: str | Path, filename: str = "tokenizer.model"
+) -> dict:
     model_tokenizer = tokenizer_model_path(model_dir, filename)
     configured_tokenizer = tokenizer_model_path(tokenizer_dir, filename)
     model_hash = sha256_file(model_tokenizer)
@@ -138,8 +143,14 @@ def compare_tokenizer_files(model_dir: str | Path, tokenizer_dir: str | Path, fi
     return result
 
 
-def validate_vocab_alignment(model_config: LlamaConfig | dict, tokenizer_vocab_size: int, expected_vocab_size: int | None = None) -> dict:
-    model_vocab_size = int(model_config["vocab_size"] if isinstance(model_config, dict) else model_config.vocab_size)
+def validate_vocab_alignment(
+    model_config: LlamaConfig | dict,
+    tokenizer_vocab_size: int,
+    expected_vocab_size: int | None = None,
+) -> dict:
+    model_vocab_size = int(
+        model_config["vocab_size"] if isinstance(model_config, dict) else model_config.vocab_size
+    )
     if model_vocab_size != int(tokenizer_vocab_size):
         raise ValueError(
             f"Vokabulargroesse passt nicht: config.json={model_vocab_size}, tokenizer={tokenizer_vocab_size}."
@@ -160,7 +171,9 @@ def count_parameters(model: torch.nn.Module) -> int:
     return sum(parameter.numel() for parameter in model.parameters())
 
 
-def validate_model_shapes(model: LlamaForCausalLM, tokenizer_vocab_size: int, expected_parameter_count: int | None) -> dict:
+def validate_model_shapes(
+    model: LlamaForCausalLM, tokenizer_vocab_size: int, expected_parameter_count: int | None
+) -> dict:
     parameter_count = count_parameters(model)
     if expected_parameter_count is not None and parameter_count != int(expected_parameter_count):
         raise ValueError(
@@ -205,7 +218,7 @@ def tokenizer_roundtrip_for_prompts(tokenizer: Any, prompts: list[str]) -> dict:
             }
         )
     return {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "prompt_count": len(prompts),
         "stable_count": stable_count,
         "all_stable": stable_count == len(prompts),
@@ -280,7 +293,9 @@ def load_local_model(checkpoint_dir: str | Path, device: str | None) -> LlamaFor
     return model
 
 
-def build_pytorch_preflight(config: dict, model: LlamaForCausalLM, sp: spm.SentencePieceProcessor) -> dict:
+def build_pytorch_preflight(
+    config: dict, model: LlamaForCausalLM, sp: spm.SentencePieceProcessor
+) -> dict:
     checkpoint_dir = Path(config["paths"]["pytorch_checkpoint_dir"])
     tokenizer_dir = Path(config["paths"]["tokenizer_dir"])
     tokenizer_compare = compare_tokenizer_files(
@@ -308,7 +323,12 @@ def build_pytorch_preflight(config: dict, model: LlamaForCausalLM, sp: spm.Sente
 
 
 @torch.no_grad()
-def run_pytorch_diagnosis(config: dict, output_dir: Path, device: str | None = None, config_path: str | Path = DEFAULT_CONFIG) -> Path:
+def run_pytorch_diagnosis(
+    config: dict,
+    output_dir: Path,
+    device: str | None = None,
+    config_path: str | Path = DEFAULT_CONFIG,
+) -> Path:
     seed = int(config["seed"])
     set_fixed_seed(seed)
     prompts = list(config["prompts"])
@@ -322,9 +342,15 @@ def run_pytorch_diagnosis(config: dict, output_dir: Path, device: str | None = N
 
     generations: list[dict] = []
     max_new_tokens = int(config["generation"]["max_new_tokens"])
-    bos_token_id = int(model.config.bos_token_id if model.config.bos_token_id is not None else sp.bos_id())
-    eos_token_id = int(model.config.eos_token_id if model.config.eos_token_id is not None else sp.eos_id())
-    pad_token_id = int(model.config.pad_token_id if model.config.pad_token_id is not None else sp.pad_id())
+    bos_token_id = int(
+        model.config.bos_token_id if model.config.bos_token_id is not None else sp.bos_id()
+    )
+    eos_token_id = int(
+        model.config.eos_token_id if model.config.eos_token_id is not None else sp.eos_id()
+    )
+    pad_token_id = int(
+        model.config.pad_token_id if model.config.pad_token_id is not None else sp.pad_id()
+    )
     unk_token_id = int(sp.unk_id())
     device_obj = next(model.parameters()).device
 
@@ -375,7 +401,7 @@ def run_pytorch_diagnosis(config: dict, output_dir: Path, device: str | None = N
             )
 
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "model_name": config["project"]["model_name"],
         "version": config["project"].get("version"),
@@ -385,7 +411,9 @@ def run_pytorch_diagnosis(config: dict, output_dir: Path, device: str | None = N
             "python": sys.version,
             "platform": platform.platform(),
             "torch": torch.__version__,
-            "transformers": getattr(transformers, "__version__", "unknown") if transformers else "unknown",
+            "transformers": getattr(transformers, "__version__", "unknown")
+            if transformers
+            else "unknown",
             "sentencepiece": getattr(spm, "__version__", "unknown"),
         },
         "safety": {
@@ -418,8 +446,7 @@ def llama_cpp_version(llama_cpp_dir: str | Path) -> dict:
         result = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "HEAD"],
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=False,
         )
         version["git_head"] = result.stdout.strip() if result.returncode == 0 else None
@@ -447,7 +474,9 @@ def find_llama_cli(llama_cpp_dir: str | Path) -> Path:
     )
 
 
-def build_llama_command(binary: Path, gguf_file: Path, prompt: str, mode_config: dict, max_new_tokens: int, seed: int) -> list[str]:
+def build_llama_command(
+    binary: Path, gguf_file: Path, prompt: str, mode_config: dict, max_new_tokens: int, seed: int
+) -> list[str]:
     temperature = float(mode_config["temperature"])
     top_p = float(mode_config["top_p"])
     top_k = int(mode_config.get("top_k", 40))
@@ -473,7 +502,9 @@ def build_llama_command(binary: Path, gguf_file: Path, prompt: str, mode_config:
     return command
 
 
-def run_gguf_diagnosis(config: dict, output_dir: Path, config_path: str | Path = DEFAULT_CONFIG) -> Path:
+def run_gguf_diagnosis(
+    config: dict, output_dir: Path, config_path: str | Path = DEFAULT_CONFIG
+) -> Path:
     seed = int(config["seed"])
     prompts = list(config["prompts"])
     gguf_file = ensure_gguf_file(config["paths"]["gguf_file"])
@@ -490,12 +521,13 @@ def run_gguf_diagnosis(config: dict, output_dir: Path, config_path: str | Path =
             llama_mode["top_p"] = 1.0
         for prompt_index, prompt in enumerate(prompts):
             command_seed = seed + (mode_index * 1000) + prompt_index
-            command = build_llama_command(binary, gguf_file, prompt, llama_mode, max_new_tokens, command_seed)
+            command = build_llama_command(
+                binary, gguf_file, prompt, llama_mode, max_new_tokens, command_seed
+            )
             result = subprocess.run(
                 command,
                 text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 check=False,
             )
             raw_output = result.stdout
@@ -507,13 +539,13 @@ def run_gguf_diagnosis(config: dict, output_dir: Path, config_path: str | Path =
                     "prompt_index": prompt_index,
                     "prompt": prompt,
                     "mode": mode_name,
-            "mode_config": {
-                "temperature": float(llama_mode["temperature"]),
-                "top_p": float(llama_mode["top_p"]),
-                "top_k": int(llama_mode.get("top_k", 40)),
-                "max_new_tokens": max_new_tokens,
-                "seed": command_seed,
-            },
+                    "mode_config": {
+                        "temperature": float(llama_mode["temperature"]),
+                        "top_p": float(llama_mode["top_p"]),
+                        "top_k": int(llama_mode.get("top_k", 40)),
+                        "max_new_tokens": max_new_tokens,
+                        "seed": command_seed,
+                    },
                     "command": command,
                     "exit_code": int(result.returncode),
                     "stdout": result.stdout,
@@ -524,7 +556,7 @@ def run_gguf_diagnosis(config: dict, output_dir: Path, config_path: str | Path =
             )
 
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "model_name": config["project"]["model_name"],
         "version": config["project"].get("version"),
@@ -545,7 +577,9 @@ def run_gguf_diagnosis(config: dict, output_dir: Path, config_path: str | Path =
     return write_json(output_dir / REPORT_FILENAMES["gguf"], report)
 
 
-def android_capture_template(config: dict, gguf_sha256: str | None = None, gguf_size: int | None = None) -> dict:
+def android_capture_template(
+    config: dict, gguf_sha256: str | None = None, gguf_size: int | None = None
+) -> dict:
     mode_examples = {}
     max_new_tokens = int(config["generation"]["max_new_tokens"])
     seed = int(config["seed"])
@@ -599,7 +633,9 @@ def read_jsonl(path: str | Path) -> list[dict]:
     return records
 
 
-def validate_android_capture_record(record: dict, config: dict, gguf_sha256: str | None, gguf_size: int | None) -> dict:
+def validate_android_capture_record(
+    record: dict, config: dict, gguf_sha256: str | None, gguf_size: int | None
+) -> dict:
     required = list(config["android"]["required_capture_fields"])
     missing = [field for field in required if field not in record]
     issues: list[str] = []
@@ -619,7 +655,9 @@ def validate_android_capture_record(record: dict, config: dict, gguf_sha256: str
     if gguf_sha256 and bool(config["android"].get("require_same_gguf_sha256_as_terminal", True)):
         if record.get("sha256") != gguf_sha256:
             issues.append(f"gguf_sha256_mismatch:{record.get('sha256')!r}")
-    if gguf_size is not None and bool(config["android"].get("require_same_file_size_as_terminal", True)):
+    if gguf_size is not None and bool(
+        config["android"].get("require_same_file_size_as_terminal", True)
+    ):
         if int(record.get("file_size_bytes", -1)) != int(gguf_size):
             issues.append(f"gguf_file_size_mismatch:{record.get('file_size_bytes')!r}")
 
@@ -650,17 +688,21 @@ def validate_android_capture_record(record: dict, config: dict, gguf_sha256: str
     }
 
 
-def run_android_diagnosis(config: dict, output_dir: Path, config_path: str | Path = DEFAULT_CONFIG) -> Path:
+def run_android_diagnosis(
+    config: dict, output_dir: Path, config_path: str | Path = DEFAULT_CONFIG
+) -> Path:
     gguf_path = Path(config["paths"]["gguf_file"])
     gguf_sha256 = sha256_file(gguf_path) if gguf_path.exists() else None
     gguf_size = gguf_path.stat().st_size if gguf_path.exists() else None
     template = android_capture_template(config, gguf_sha256=gguf_sha256, gguf_size=gguf_size)
     template_path = write_json(output_dir / REPORT_FILENAMES["android_template"], template)
 
-    capture_path = Path(config["paths"].get("android_capture_file", output_dir / "android_capture.jsonl"))
+    capture_path = Path(
+        config["paths"].get("android_capture_file", output_dir / "android_capture.jsonl")
+    )
     if not capture_path.exists():
         report = {
-            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "created_at_utc": datetime.now(UTC).isoformat(),
             "config_file": str(config_path),
             "status": "awaiting_android_capture",
             "android_capture_file": str(capture_path),
@@ -671,12 +713,14 @@ def run_android_diagnosis(config: dict, output_dir: Path, config_path: str | Pat
 
     records = read_jsonl(capture_path)
     validations = [
-        validate_android_capture_record(record, config, gguf_sha256=gguf_sha256, gguf_size=gguf_size)
+        validate_android_capture_record(
+            record, config, gguf_sha256=gguf_sha256, gguf_size=gguf_size
+        )
         for record in records
     ]
     issue_count = sum(item["issue_count"] for item in validations)
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "status": "ok" if issue_count == 0 else "issues_found",
         "android_capture_file": str(capture_path),
@@ -717,7 +761,9 @@ def run_compare(config: dict, output_dir: Path) -> Path:
     pytorch_path = output_dir / REPORT_FILENAMES["pytorch"]
     gguf_path = output_dir / REPORT_FILENAMES["gguf"]
     if not pytorch_path.exists():
-        raise FileNotFoundError(f"PyTorch-Report fehlt: {pytorch_path}. Fuehre zuerst --mode pytorch aus.")
+        raise FileNotFoundError(
+            f"PyTorch-Report fehlt: {pytorch_path}. Fuehre zuerst --mode pytorch aus."
+        )
     if not gguf_path.exists():
         raise FileNotFoundError(f"GGUF-Report fehlt: {gguf_path}. Fuehre zuerst --mode gguf aus.")
 
@@ -778,7 +824,7 @@ def run_compare(config: dict, output_dir: Path) -> Path:
     lines = [
         "# quantum-1.6-pilot Diagnosezusammenfassung",
         "",
-        f"- Erstellt UTC: `{datetime.now(timezone.utc).isoformat()}`",
+        f"- Erstellt UTC: `{datetime.now(UTC).isoformat()}`",
         f"- PyTorch-Report: `{pytorch_path}`",
         f"- GGUF-Report: `{gguf_path}`",
         f"- Android-Report: `{android_path if android_path.exists() else 'nicht vorhanden'}`",
@@ -795,7 +841,9 @@ def run_compare(config: dict, output_dir: Path) -> Path:
     ]
     for row in rows:
         prompt = row["prompt"].replace("\n", "\\n")
-        lines.append(f"| {prompt} | {row['mode']} | {row['classification']} | {row['similarity']:.3f} |")
+        lines.append(
+            f"| {prompt} | {row['mode']} | {row['classification']} | {row['similarity']:.3f} |"
+        )
 
     if android_rows:
         lines.extend(
@@ -813,14 +861,16 @@ def run_compare(config: dict, output_dir: Path) -> Path:
         )
         for row in android_rows:
             prompt = row["prompt"].replace("\n", "\\n")
-            lines.append(f"| {prompt} | {row['mode']} | {row['classification']} | {row['similarity']:.3f} |")
+            lines.append(
+                f"| {prompt} | {row['mode']} | {row['classification']} | {row['similarity']:.3f} |"
+            )
 
     summary = "\n".join(lines) + "\n"
     path = output_dir / REPORT_FILENAMES["summary"]
     path.write_text(summary, encoding="utf-8")
 
     comparison_json = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "pytorch_report": str(pytorch_path),
         "gguf_report": str(gguf_path),
         "counts": dict(counts),
@@ -835,20 +885,34 @@ def run_compare(config: dict, output_dir: Path) -> Path:
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Diagnostiziert quantum-1.6-pilot Generationen.")
-    parser.add_argument("--mode", choices=["pytorch", "gguf", "android", "compare", "all"], default="all")
+    parser.add_argument(
+        "--mode", choices=["pytorch", "gguf", "android", "compare", "all"], default="all"
+    )
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--device", choices=["cpu", "cuda"], help="PyTorch-Zielgeraet.")
     parser.add_argument("--output-dir", help="Override fuer modellisolierten Diagnoseordner.")
+    parser.add_argument(
+        "--llama-cpp-dir",
+        help="Expliziter Pfad zu einem externen llama.cpp-Checkout fuer GGUF-Modi.",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
     config = load_config(args.config)
+    if args.llama_cpp_dir:
+        config["paths"]["llama_cpp_dir"] = args.llama_cpp_dir
+    if args.mode in {"gguf", "all"} and not config["paths"].get("llama_cpp_dir"):
+        raise ValueError(
+            "--llama-cpp-dir ist fuer GGUF-Diagnosen erforderlich. Siehe docs/gguf-export.md."
+        )
     output_dir = resolve_output_dir(config, args.output_dir)
 
     if args.mode in {"pytorch", "all"}:
-        path = run_pytorch_diagnosis(config, output_dir, device=args.device, config_path=args.config)
+        path = run_pytorch_diagnosis(
+            config, output_dir, device=args.device, config_path=args.config
+        )
         print(f"PyTorch-Report: {path}")
     if args.mode in {"gguf", "all"}:
         path = run_gguf_diagnosis(config, output_dir, config_path=args.config)

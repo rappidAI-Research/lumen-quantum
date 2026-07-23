@@ -1,7 +1,11 @@
-# Lumen quantum-1-base Modell-Spezifikation
+# rappidAI Quantum — quantum-1-base model specification
+
+> Historical from-scratch pilot specification from the earlier Lumen project
+> phase. Its no-pretrained-weights rule applies to that pilot line, not
+> automatically to future derived models.
 
 `quantum-1-base` ist die vorbereitete Basisarchitektur fuer das spaetere
-deutschsprachige Lumen-Modell. In dieser Phase wird noch kein grosses Training
+deutschsprachige Pilotmodell der frueheren Lumen-Phase. In dieser Phase wird noch kein grosses Training
 gestartet. Ziel ist nur, Architektur, Tokenizer-Kompatibilitaet, Forward Pass
 und lokales Speichern zu pruefen.
 
@@ -52,7 +56,7 @@ Zusaetzlich enthaelt der Pilot-Tokenizer:
 ## Lokale Pruefbefehle unter Windows PowerShell
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 python scripts\inspect_model_size.py --config configs\quantum_1_base_pilot.yaml
 python scripts\validate_quantum_model.py --config configs\quantum_1_base_pilot.yaml

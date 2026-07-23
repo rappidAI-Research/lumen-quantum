@@ -11,14 +11,13 @@ import argparse
 import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import sentencepiece as spm
 import torch
 import yaml
-
 
 LOGGER = logging.getLogger("lumen.tokenize_quantum_data")
 SPLITS = ("train", "validation", "test")
@@ -113,10 +112,14 @@ def load_local_sentencepiece_tokenizer(config: dict) -> tuple[spm.SentencePieceP
         )
     missing = [name for name in REQUIRED_TOKENIZER_FILES if not (tokenizer_dir / name).exists()]
     if missing:
-        raise FileNotFoundError(f"Tokenizer-Dateien fehlen in {tokenizer_dir}: {', '.join(missing)}")
+        raise FileNotFoundError(
+            f"Tokenizer-Dateien fehlen in {tokenizer_dir}: {', '.join(missing)}"
+        )
 
     model_path = tokenizer_dir / config["tokenizer"].get("model_file", "tokenizer.model")
-    manifest_path = tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+    manifest_path = tokenizer_dir / config["tokenizer"].get(
+        "manifest_file", "tokenizer_manifest.json"
+    )
     manifest = read_json(manifest_path)
     sp = spm.SentencePieceProcessor(model_file=str(model_path))
 
@@ -134,7 +137,9 @@ def load_local_sentencepiece_tokenizer(config: dict) -> tuple[spm.SentencePieceP
     vocab_size = int(sp.get_piece_size())
     manifest_vocab = int(manifest.get("actual_vocab_size", vocab_size))
     if manifest_vocab != vocab_size:
-        raise ValueError(f"Tokenizer-Manifest vocab_size={manifest_vocab}, tokenizer.model={vocab_size}.")
+        raise ValueError(
+            f"Tokenizer-Manifest vocab_size={manifest_vocab}, tokenizer.model={vocab_size}."
+        )
 
     return sp, manifest
 
@@ -307,7 +312,9 @@ def assert_no_split_overlap(split_stats: dict[str, dict]) -> None:
     for split, stats in split_stats.items():
         for digest in stats.get("document_hashes", []):
             if digest in seen:
-                raise ValueError(f"Split-Ueberschneidung: Dokumenthash {digest} in {seen[digest]} und {split}.")
+                raise ValueError(
+                    f"Split-Ueberschneidung: Dokumenthash {digest} in {seen[digest]} und {split}."
+                )
             seen[digest] = split
 
 
@@ -343,7 +350,11 @@ def tokenize_quantum_data(
     hash_field = config["input"].get("document_hash_field")
     drop_empty_documents = bool(config["packing"].get("drop_empty_documents", True))
     pad_remainder = bool(config["packing"].get("pad_remainder", True))
-    limit_overrides = {"train": max_tokens, "validation": validation_max_tokens, "test": test_max_tokens}
+    limit_overrides = {
+        "train": max_tokens,
+        "validation": validation_max_tokens,
+        "test": test_max_tokens,
+    }
 
     output_dir.mkdir(parents=True, exist_ok=True)
     split_stats: dict[str, dict] = {}
@@ -396,15 +407,21 @@ def tokenize_quantum_data(
 
     tokenizer_dir = Path(config["tokenizer"]["dir"])
     manifest = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "seed": int(config["seed"]),
         "dataset_name": config["project"]["dataset_name"],
         "tokenizer": {
             "dir": str(tokenizer_dir),
-            "model_file": str(tokenizer_dir / config["tokenizer"].get("model_file", "tokenizer.model")),
-            "tokenizer_model_sha256": sha256_file(tokenizer_dir / config["tokenizer"].get("model_file", "tokenizer.model")),
-            "tokenizer_manifest_sha256": sha256_file(tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")),
+            "model_file": str(
+                tokenizer_dir / config["tokenizer"].get("model_file", "tokenizer.model")
+            ),
+            "tokenizer_model_sha256": sha256_file(
+                tokenizer_dir / config["tokenizer"].get("model_file", "tokenizer.model")
+            ),
+            "tokenizer_manifest_sha256": sha256_file(
+                tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+            ),
             "vocab_size": vocab_size,
             "token_ids": {
                 "<unk>": int(sp.piece_to_id("<unk>")),
@@ -437,12 +454,24 @@ def tokenize_quantum_data(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Tokenisiert quantum-1 Pilotdaten mit lokalem SentencePiece-Tokenizer.")
+    parser = argparse.ArgumentParser(
+        description="Tokenisiert quantum-1 Pilotdaten mit lokalem SentencePiece-Tokenizer."
+    )
     parser.add_argument("--config", default="configs/quantum_1_pilot_data.yaml")
-    parser.add_argument("--overwrite", action="store_true", help="Bestehende tokenisierte Pilotdaten ueberschreiben.")
-    parser.add_argument("--max-tokens", type=int, help="Trainingslimit in echten Tokens vor Padding.")
-    parser.add_argument("--validation-max-tokens", type=int, help="Validation-Limit in echten Tokens vor Padding.")
-    parser.add_argument("--test-max-tokens", type=int, help="Test-Limit in echten Tokens vor Padding.")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Bestehende tokenisierte Pilotdaten ueberschreiben.",
+    )
+    parser.add_argument(
+        "--max-tokens", type=int, help="Trainingslimit in echten Tokens vor Padding."
+    )
+    parser.add_argument(
+        "--validation-max-tokens", type=int, help="Validation-Limit in echten Tokens vor Padding."
+    )
+    parser.add_argument(
+        "--test-max-tokens", type=int, help="Test-Limit in echten Tokens vor Padding."
+    )
     return parser.parse_args(argv)
 
 

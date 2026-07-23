@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
@@ -48,7 +48,9 @@ def load_model_state_dict(checkpoint_dir: str | Path) -> dict:
     )
 
 
-def load_model_from_checkpoint(checkpoint_dir: str | Path, device: str | None = None) -> LlamaForCausalLM:
+def load_model_from_checkpoint(
+    checkpoint_dir: str | Path, device: str | None = None
+) -> LlamaForCausalLM:
     checkpoint = Path(checkpoint_dir)
     if not checkpoint.exists():
         raise FileNotFoundError(f"Checkpoint nicht gefunden: {checkpoint}")
@@ -104,11 +106,19 @@ def generate_text(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generiert Text mit einem lokalen Lumen-Checkpoint.")
-    parser.add_argument("--checkpoint", default="models/smoke/final", help="Lokaler Checkpoint-Ordner.")
-    parser.add_argument("--tokenizer-dir", default="tokenizer/smoke", help="Lokaler Tokenizer-Ordner.")
+    parser = argparse.ArgumentParser(
+        description="Generiert Text mit einem lokalen Lumen-Checkpoint."
+    )
+    parser.add_argument(
+        "--checkpoint", default="models/smoke/final", help="Lokaler Checkpoint-Ordner."
+    )
+    parser.add_argument(
+        "--tokenizer-dir", default="tokenizer/smoke", help="Lokaler Tokenizer-Ordner."
+    )
     parser.add_argument("--prompt", required=True, help="Prompt fuer die Generierung.")
-    parser.add_argument("--max-new-tokens", type=int, default=80, help="Maximal neu zu generierende Tokens.")
+    parser.add_argument(
+        "--max-new-tokens", type=int, default=80, help="Maximal neu zu generierende Tokens."
+    )
     parser.add_argument("--temperature", type=float, default=0.8, help="Sampling-Temperatur.")
     parser.add_argument("--top-p", type=float, default=0.9, help="Nucleus-Sampling top-p.")
     parser.add_argument("--device", choices=["cpu", "cuda"], help="Optionales Zielgeraet.")
@@ -120,7 +130,9 @@ def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
     checkpoint = Path(args.checkpoint)
     tokenizer_dir = Path(args.tokenizer_dir)
-    if (checkpoint / "tokenizer" / "tokenizer.model").exists() and args.tokenizer_dir == "tokenizer/smoke":
+    if (
+        checkpoint / "tokenizer" / "tokenizer.model"
+    ).exists() and args.tokenizer_dir == "tokenizer/smoke":
         tokenizer_dir = checkpoint / "tokenizer"
 
     tokenizer = load_fast_tokenizer(tokenizer_dir)

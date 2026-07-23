@@ -13,9 +13,9 @@ import logging
 import math
 import random
 import shutil
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from accelerate import Accelerator
@@ -25,7 +25,9 @@ from transformers import get_cosine_schedule_with_warmup, get_linear_schedule_wi
 try:
     import sentencepiece as spm
 except ImportError as exc:  # pragma: no cover - depends on local environment.
-    raise ImportError("sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt") from exc
+    raise ImportError(
+        "sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt"
+    ) from exc
 
 try:
     from .generate_quantum import load_quantum_weights
@@ -60,7 +62,14 @@ CHECKPOINT_PREFIX = "checkpoint-step-"
 class JsonlTokenBlockDataset(Dataset):
     """Kleine In-Memory-Dataset-Klasse fuer Pilotlaeufe."""
 
-    def __init__(self, path: str | Path, tokenizer_model: str | Path, text_field: str, block_size: int, pad_token_id: int):
+    def __init__(
+        self,
+        path: str | Path,
+        tokenizer_model: str | Path,
+        text_field: str,
+        block_size: int,
+        pad_token_id: int,
+    ):
         data_path = Path(path)
         if not data_path.exists():
             raise FileNotFoundError(f"JSONL-Datendatei nicht gefunden: {data_path}")
@@ -82,7 +91,9 @@ class JsonlTokenBlockDataset(Dataset):
                 mask = torch.tensor(attention_mask, dtype=torch.long)
                 labels = input_ids.clone()
                 labels[mask == 0] = -100
-                self.examples.append({"input_ids": input_ids, "attention_mask": mask, "labels": labels})
+                self.examples.append(
+                    {"input_ids": input_ids, "attention_mask": mask, "labels": labels}
+                )
 
         if not self.examples:
             raise ValueError(f"Keine Trainingsbloecke aus {data_path} erzeugt.")
@@ -115,8 +126,13 @@ class TokenizedTensorDataset(Dataset):
 
         if self.input_ids.ndim != 2:
             raise ValueError(f"input_ids in {data_path} muss zweidimensional sein.")
-        if self.input_ids.shape != self.attention_mask.shape or self.input_ids.shape != self.labels.shape:
-            raise ValueError(f"input_ids, attention_mask und labels haben unterschiedliche Formen in {data_path}.")
+        if (
+            self.input_ids.shape != self.attention_mask.shape
+            or self.input_ids.shape != self.labels.shape
+        ):
+            raise ValueError(
+                f"input_ids, attention_mask und labels haben unterschiedliche Formen in {data_path}."
+            )
         if self.input_ids.shape[1] != int(context_length):
             raise ValueError(
                 f"{data_path} hat Kontextlaenge {self.input_ids.shape[1]}, erwartet {context_length}."
@@ -193,7 +209,10 @@ def detect_runtime_environment(requested_mixed_precision: str = "auto") -> dict:
     else:
         mixed_precision = str(requested_mixed_precision)
         if not cuda_available and mixed_precision != "no":
-            LOGGER.warning("Mixed Precision %s wurde angefordert, aber CUDA fehlt. Nutze mixed_precision='no'.", mixed_precision)
+            LOGGER.warning(
+                "Mixed Precision %s wurde angefordert, aber CUDA fehlt. Nutze mixed_precision='no'.",
+                mixed_precision,
+            )
             mixed_precision = "no"
 
     return {
@@ -287,7 +306,11 @@ def latest_checkpoint(output_dir: str | Path) -> Path | None:
     if not checkpoint_root.exists():
         return None
     checkpoints = sorted(
-        (path for path in checkpoint_root.glob(f"{CHECKPOINT_PREFIX}*") if checkpoint_is_complete(path)),
+        (
+            path
+            for path in checkpoint_root.glob(f"{CHECKPOINT_PREFIX}*")
+            if checkpoint_is_complete(path)
+        ),
         key=checkpoint_step,
     )
     return checkpoints[-1] if checkpoints else None
@@ -362,14 +385,16 @@ def save_checkpoint(
         state_dict=accelerator.get_state_dict(model),
         safe_serialization=True,
     )
-    tokenizer_manifest = json.loads((Path(tokenizer_dir) / "tokenizer_manifest.json").read_text(encoding="utf-8"))
+    tokenizer_manifest = json.loads(
+        (Path(tokenizer_dir) / "tokenizer_manifest.json").read_text(encoding="utf-8")
+    )
     training_state = {
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
         "global_step": global_step,
         "epoch": epoch,
         "rng_state": get_rng_state(),
-        "saved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "saved_at_utc": datetime.now(UTC).isoformat(),
         "config": config,
         "tokenizer_manifest": tokenizer_manifest,
     }
@@ -403,12 +428,14 @@ def save_final_model(
     copy_quantum_tokenizer(tokenizer_dir, final_dir / "tokenizer")
     copy_quantum_tokenizer_files_to_root(tokenizer_dir, final_dir)
     metadata = {
-        "saved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "saved_at_utc": datetime.now(UTC).isoformat(),
         "global_step": global_step,
         "note": "Lokales quantum-1-base Pilot-Artefakt; keine vortrainierten Gewichte wurden geladen.",
         "config": config,
     }
-    (final_dir / "training_metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    (final_dir / "training_metadata.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     LOGGER.info("Finales Modell gespeichert: %s", final_dir)
     return final_dir
 
@@ -419,7 +446,9 @@ def evaluate_loss(model, dataloader: DataLoader, accelerator: Accelerator) -> fl
     losses: list[torch.Tensor] = []
     for batch in dataloader:
         outputs = model(**batch)
-        gathered = accelerator.gather_for_metrics(outputs.loss.detach().repeat(batch["input_ids"].shape[0]))
+        gathered = accelerator.gather_for_metrics(
+            outputs.loss.detach().repeat(batch["input_ids"].shape[0])
+        )
         losses.append(gathered)
     model.train()
     if not losses:
@@ -431,13 +460,19 @@ def tokenized_split_file(data_config: dict, split: str) -> Path:
     return Path(data_config["tokenized_dir"]) / f"{split}.pt"
 
 
-def validate_tokenized_data_dir(data_config: dict, vocab_size: int, context_length: int) -> dict[str, dict]:
+def validate_tokenized_data_dir(
+    data_config: dict, vocab_size: int, context_length: int
+) -> dict[str, dict]:
     if "tokenized_dir" not in data_config:
-        raise ValueError("Cloud-Pilot erwartet data.tokenized_dir mit train.pt, validation.pt und test.pt.")
+        raise ValueError(
+            "Cloud-Pilot erwartet data.tokenized_dir mit train.pt, validation.pt und test.pt."
+        )
 
     stats: dict[str, dict] = {}
     for split in ["train", "validation", "test"]:
-        dataset = TokenizedTensorDataset(tokenized_split_file(data_config, split), vocab_size, context_length)
+        dataset = TokenizedTensorDataset(
+            tokenized_split_file(data_config, split), vocab_size, context_length
+        )
         stats[split] = {
             "path": str(tokenized_split_file(data_config, split)),
             "sequences": len(dataset),
@@ -448,7 +483,9 @@ def validate_tokenized_data_dir(data_config: dict, vocab_size: int, context_leng
     return stats
 
 
-def build_datasets(config: dict, tokenizer_info, llama_config) -> tuple[Dataset, Dataset, dict[str, dict]]:
+def build_datasets(
+    config: dict, tokenizer_info, llama_config
+) -> tuple[Dataset, Dataset, dict[str, dict]]:
     data_config = config["data"]
     block_size = int(data_config["block_size"])
     if block_size > int(llama_config.max_position_embeddings):
@@ -456,7 +493,9 @@ def build_datasets(config: dict, tokenizer_info, llama_config) -> tuple[Dataset,
 
     if data_config.get("tokenized_dir"):
         data_stats = validate_tokenized_data_dir(data_config, tokenizer_info.vocab_size, block_size)
-        train_dataset = TokenizedTensorDataset(tokenized_split_file(data_config, "train"), tokenizer_info.vocab_size, block_size)
+        train_dataset = TokenizedTensorDataset(
+            tokenized_split_file(data_config, "train"), tokenizer_info.vocab_size, block_size
+        )
         validation_dataset = TokenizedTensorDataset(
             tokenized_split_file(data_config, "validation"),
             tokenizer_info.vocab_size,
@@ -478,14 +517,22 @@ def build_datasets(config: dict, tokenizer_info, llama_config) -> tuple[Dataset,
         block_size,
         tokenizer_info.pad_token_id,
     )
-    return train_dataset, validation_dataset, {
-        "train": {"path": str(data_config["train_file"]), "sequences": len(train_dataset), "source": "jsonl"},
-        "validation": {
-            "path": str(data_config["validation_file"]),
-            "sequences": len(validation_dataset),
-            "source": "jsonl",
+    return (
+        train_dataset,
+        validation_dataset,
+        {
+            "train": {
+                "path": str(data_config["train_file"]),
+                "sequences": len(train_dataset),
+                "source": "jsonl",
+            },
+            "validation": {
+                "path": str(data_config["validation_file"]),
+                "sequences": len(validation_dataset),
+                "source": "jsonl",
+            },
         },
-    }
+    )
 
 
 @torch.no_grad()
@@ -523,10 +570,15 @@ def train(
     tokenizer_info = load_quantum_tokenizer_info(config)
     llama_config = build_quantum_llama_config(config, tokenizer_info)
     model = build_quantum_model(llama_config)
-    LOGGER.info("Modell initialisiert mit zufaelligen Gewichten: %s Parameter.", f"{count_parameters(model):,}")
+    LOGGER.info(
+        "Modell initialisiert mit zufaelligen Gewichten: %s Parameter.",
+        f"{count_parameters(model):,}",
+    )
     LOGGER.info("Vortrainierte Modellgewichte: nein; Modell wurde direkt aus LlamaConfig gebaut.")
 
-    train_dataset, validation_dataset, data_stats = build_datasets(config, tokenizer_info, llama_config)
+    train_dataset, validation_dataset, data_stats = build_datasets(
+        config, tokenizer_info, llama_config
+    )
     LOGGER.info("Train-Sequenzen: %d", len(train_dataset))
     LOGGER.info("Validation-Sequenzen: %d", len(validation_dataset))
     if "test" in data_stats:
@@ -541,10 +593,15 @@ def train(
         )
         return output_dir
 
-    max_steps = int(max_steps_override if max_steps_override is not None else training_config["max_steps"])
+    max_steps = int(
+        max_steps_override if max_steps_override is not None else training_config["max_steps"]
+    )
     if max_steps <= 0:
         output_dir.mkdir(parents=True, exist_ok=True)
-        LOGGER.info("max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 fuer einen lokalen Pilotlauf.", max_steps)
+        LOGGER.info(
+            "max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 fuer einen lokalen Pilotlauf.",
+            max_steps,
+        )
         return output_dir
 
     train_loader = DataLoader(
@@ -571,7 +628,9 @@ def train(
         mixed_precision=str(runtime["mixed_precision"]),
     )
 
-    resume_value = resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    resume_value = (
+        resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    )
     checkpoint_path = resolve_resume_checkpoint(output_dir, resume_value)
     start_step = 0
     start_epoch = 0
@@ -579,7 +638,9 @@ def train(
         checkpoint_dir = checkpoint_path if checkpoint_path.is_dir() else checkpoint_path.parent
         LOGGER.info("Lade lokalen Resume-Checkpoint: %s", checkpoint_dir)
         load_quantum_weights(model, checkpoint_dir)
-        state = torch.load(checkpoint_dir / "training_state.pt", map_location="cpu", weights_only=False)
+        state = torch.load(
+            checkpoint_dir / "training_state.pt", map_location="cpu", weights_only=False
+        )
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
         start_step = int(state["global_step"])
@@ -604,7 +665,9 @@ def train(
                 loss = outputs.loss
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
-                    accelerator.clip_grad_norm_(model.parameters(), float(training_config["max_grad_norm"]))
+                    accelerator.clip_grad_norm_(
+                        model.parameters(), float(training_config["max_grad_norm"])
+                    )
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
@@ -622,8 +685,15 @@ def train(
                     )
                     running_loss = 0.0
                 if global_step % int(training_config["eval_steps"]) == 0:
-                    LOGGER.info("step=%d validation_loss=%.4f", global_step, evaluate_loss(model, validation_loader, accelerator))
-                if accelerator.is_main_process and global_step % int(training_config["save_steps"]) == 0:
+                    LOGGER.info(
+                        "step=%d validation_loss=%.4f",
+                        global_step,
+                        evaluate_loss(model, validation_loader, accelerator),
+                    )
+                if (
+                    accelerator.is_main_process
+                    and global_step % int(training_config["save_steps"]) == 0
+                ):
                     save_checkpoint(
                         accelerator,
                         model,
@@ -654,21 +724,36 @@ def train(
             )
 
     accelerator.wait_for_everyone()
-    return save_final_model(accelerator, model, output_dir, config, tokenizer_info.tokenizer_dir, global_step)
+    return save_final_model(
+        accelerator, model, output_dir, config, tokenizer_info.tokenizer_dir, global_step
+    )
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Pilot-Training fuer quantum-1-base vorbereiten/kurz testen.")
+    parser = argparse.ArgumentParser(
+        description="Pilot-Training fuer quantum-1-base vorbereiten/kurz testen."
+    )
     parser.add_argument("--config", default="configs/quantum_1_base_pilot.yaml")
     parser.add_argument("--resume-from", help="Checkpoint-Ordner, training_state.pt oder 'auto'.")
-    parser.add_argument("--max-steps", type=int, help="Maximale Trainingsschritte fuer einen lokalen Pilotlauf.")
-    parser.add_argument("--dry-run", action="store_true", help="Baut Modell und Daten, macht Forward Pass, speichert nichts.")
+    parser.add_argument(
+        "--max-steps", type=int, help="Maximale Trainingsschritte fuer einen lokalen Pilotlauf."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Baut Modell und Daten, macht Forward Pass, speichert nichts.",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
-    train(args.config, resume_from=args.resume_from, max_steps_override=args.max_steps, dry_run=args.dry_run)
+    train(
+        args.config,
+        resume_from=args.resume_from,
+        max_steps_override=args.max_steps,
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == "__main__":

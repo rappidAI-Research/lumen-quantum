@@ -6,9 +6,9 @@ import argparse
 import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -70,7 +70,10 @@ def summarize_jsonl(path: Path) -> dict:
         return {"exists": False, "documents": 0, "chars": 0, "approx_tokens": 0}
     records = read_jsonl(path)
     chars = sum(int(record.get("char_count", len(record.get("text", "")))) for record in records)
-    words = sum(int(record.get("word_count", len(str(record.get("text", "")).split()))) for record in records)
+    words = sum(
+        int(record.get("word_count", len(str(record.get("text", "")).split())))
+        for record in records
+    )
     approx_tokens = sum(
         int(record.get("approx_token_count", max(1, round(len(record.get("text", "")) / 4))))
         for record in records
@@ -114,7 +117,7 @@ def build_manifest(config_path: str | Path) -> dict:
     split_metadata = load_json(cleaned_dir / "split_metadata.json")
 
     manifest = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "dataset_name": config["project"]["dataset_name"],
         "dataset_version": config["manifest"]["version"],
@@ -127,7 +130,8 @@ def build_manifest(config_path: str | Path) -> dict:
         "targets": config.get("targets", {}),
         "filter_rules": config["cleaning"],
         "document_counts": {
-            name: files[name]["documents"] for name in ["raw", "cleaned", "train", "validation", "test"]
+            name: files[name]["documents"]
+            for name in ["raw", "cleaned", "train", "validation", "test"]
         },
         "text_amount": {
             name: {
@@ -137,11 +141,10 @@ def build_manifest(config_path: str | Path) -> dict:
             for name in ["raw", "cleaned", "train", "validation", "test"]
         },
         "estimated_tokens": {
-            name: files[name]["approx_tokens"] for name in ["raw", "cleaned", "train", "validation", "test"]
+            name: files[name]["approx_tokens"]
+            for name in ["raw", "cleaned", "train", "validation", "test"]
         },
-        "file_hashes": {
-            name: files[name].get("sha256") for name in files
-        },
+        "file_hashes": {name: files[name].get("sha256") for name in files},
         "files": files,
         "download": download_metadata,
         "cleaning": cleaning_metadata,
@@ -224,7 +227,9 @@ def run(config_path: str | Path) -> tuple[Path, Path]:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Erstellt das quantum-1 FineWeb2-HQ Datenmanifest.")
+    parser = argparse.ArgumentParser(
+        description="Erstellt das quantum-1 FineWeb2-HQ Datenmanifest."
+    )
     parser.add_argument("--config", default="configs/quantum_1_data.yaml")
     return parser.parse_args(argv)
 

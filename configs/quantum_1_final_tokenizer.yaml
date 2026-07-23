@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   tokenizer_name: "quantum-1"
   dataset_name: "quantum-1-final-tokenized-v1"
   description: "Finaler SentencePiece-BPE-Tokenizer und finale Tokenisierung fuer quantum-1."

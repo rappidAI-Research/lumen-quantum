@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -111,13 +111,19 @@ def validate_special_tokens(
 
     manifest_ids = manifest.get("token_ids", {})
     for token, token_id in ids.items():
-        assert_equal(int(manifest_ids.get(token, -1)), token_id, f"tokenizer_manifest.json token_ids[{token}]")
+        assert_equal(
+            int(manifest_ids.get(token, -1)),
+            token_id,
+            f"tokenizer_manifest.json token_ids[{token}]",
+        )
 
     return ids
 
 
 def validate_no_byte_fallback(sp: spm.SentencePieceProcessor) -> None:
-    byte_tokens = [sp.id_to_piece(index) for index in range(sp.get_piece_size()) if sp.is_byte(index)]
+    byte_tokens = [
+        sp.id_to_piece(index) for index in range(sp.get_piece_size()) if sp.is_byte(index)
+    ]
     if byte_tokens:
         preview = ", ".join(byte_tokens[:5])
         raise ValueError(
@@ -131,7 +137,9 @@ def validate_roundtrip_and_umlauts(sp: spm.SentencePieceProcessor, sentences: li
     joined = " ".join(sentences)
     missing = sorted(char for char in required_chars if char not in joined.lower())
     if missing:
-        raise ValueError(f"Validierungssaetze muessen deutsche Umlaute enthalten, fehlend: {missing}")
+        raise ValueError(
+            f"Validierungssaetze muessen deutsche Umlaute enthalten, fehlend: {missing}"
+        )
 
     unk_id = int(sp.unk_id())
     for sentence in sentences:
@@ -166,11 +174,19 @@ def validate_quantum_tokenizer(config_path: str | Path) -> dict:
     assert_equal(int(future_config["bos_token_id"]), 1, "future_llama_config bos_token_id")
     assert_equal(int(future_config["eos_token_id"]), 2, "future_llama_config eos_token_id")
     assert_equal(int(future_config["pad_token_id"]), 3, "future_llama_config pad_token_id")
-    assert_equal(int(manifest.get("actual_vocab_size", -1)), actual_vocab_size, "Manifest actual_vocab_size")
-    assert_equal(int(manifest.get("future_llama_vocab_size", -1)), future_vocab_size, "Manifest future_llama_vocab_size")
+    assert_equal(
+        int(manifest.get("actual_vocab_size", -1)), actual_vocab_size, "Manifest actual_vocab_size"
+    )
+    assert_equal(
+        int(manifest.get("future_llama_vocab_size", -1)),
+        future_vocab_size,
+        "Manifest future_llama_vocab_size",
+    )
 
     chat_tokens = list(config["tokenizer"]["special_tokens"].get("additional_special_tokens") or [])
-    token_id_map = validate_special_tokens(sp, tokenizer_config, special_tokens_map, manifest, chat_tokens)
+    token_id_map = validate_special_tokens(
+        sp, tokenizer_config, special_tokens_map, manifest, chat_tokens
+    )
     validate_no_byte_fallback(sp)
 
     validation_config = config.get("validation", {})
@@ -179,7 +195,7 @@ def validate_quantum_tokenizer(config_path: str | Path) -> dict:
     validate_roundtrip_and_umlauts(sp, sentences)
 
     report = {
-        "validated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "validated_at_utc": datetime.now(UTC).isoformat(),
         "tokenizer_dir": str(tokenizer_dir),
         "actual_vocab_size": actual_vocab_size,
         "future_llama_vocab_size": future_vocab_size,

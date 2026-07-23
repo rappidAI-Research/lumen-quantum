@@ -1,4 +1,7 @@
-# quantum-1 finale v1-Pipeline
+# rappidAI Quantum — historical quantum-1 final pipeline plan
+
+> Historical plan from the earlier Lumen project phase. It is not a published
+> production release plan and is retained for provenance.
 
 Der Cloud-Pilot bleibt archiviert und wird nicht veraendert. Die finale v1
 nutzt neue Ausgabeorte:
@@ -112,7 +115,7 @@ duerfen nicht uebernommen werden, weil der finale Tokenizer neu ist.
 ## Windows-Befehle
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 

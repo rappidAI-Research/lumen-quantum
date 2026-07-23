@@ -6,9 +6,9 @@ import argparse
 import json
 import logging
 import random
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 import yaml
@@ -148,7 +148,9 @@ def encode_units(units: list[str], tokenizer) -> list[int]:
     return ids
 
 
-def make_blocks(token_ids: list[int], block_size: int, pad_token_id: int) -> tuple[torch.Tensor, torch.Tensor]:
+def make_blocks(
+    token_ids: list[int], block_size: int, pad_token_id: int
+) -> tuple[torch.Tensor, torch.Tensor]:
     if block_size < 8:
         raise ValueError("block_size sollte mindestens 8 sein.")
     if not token_ids:
@@ -204,8 +206,12 @@ def prepare_data(
     train_ids = encode_units(train_units, tokenizer)
     validation_ids = encode_units(validation_units, tokenizer)
     test_ids = encode_units(test_units, tokenizer)
-    train_input_ids, train_attention_mask = make_blocks(train_ids, block_size, tokenizer.pad_token_id)
-    val_input_ids, val_attention_mask = make_blocks(validation_ids, block_size, tokenizer.pad_token_id)
+    train_input_ids, train_attention_mask = make_blocks(
+        train_ids, block_size, tokenizer.pad_token_id
+    )
+    val_input_ids, val_attention_mask = make_blocks(
+        validation_ids, block_size, tokenizer.pad_token_id
+    )
 
     tokenized_path = Path(tokenized_dir)
     processed_path = Path(processed_dir)
@@ -226,7 +232,9 @@ def prepare_data(
     test_blocks = 0
     test_path = tokenized_path / "test.pt"
     if len(test_ids) >= 2:
-        test_input_ids, test_attention_mask = make_blocks(test_ids, block_size, tokenizer.pad_token_id)
+        test_input_ids, test_attention_mask = make_blocks(
+            test_ids, block_size, tokenizer.pad_token_id
+        )
         torch.save(
             {"input_ids": test_input_ids, "attention_mask": test_attention_mask},
             test_path,
@@ -241,7 +249,7 @@ def prepare_data(
         )
 
     metadata = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "seed": seed,
         "validation_ratio": validation_ratio,
         "test_ratio": test_ratio,
@@ -278,8 +286,12 @@ def prepare_data(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Tokenisiert Rohdaten fuer das Lumen-Smoke-Training.")
-    parser.add_argument("--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration.")
+    parser = argparse.ArgumentParser(
+        description="Tokenisiert Rohdaten fuer das Lumen-Smoke-Training."
+    )
+    parser.add_argument(
+        "--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration."
+    )
     parser.add_argument("--raw-dir", help="Ordner mit .txt-Rohdaten.")
     parser.add_argument("--tokenizer-dir", help="Ordner mit lokal trainiertem Tokenizer.")
     parser.add_argument("--tokenized-dir", help="Zielordner fuer train.pt und validation.pt.")

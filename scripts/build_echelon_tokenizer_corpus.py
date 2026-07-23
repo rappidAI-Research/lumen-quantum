@@ -3,11 +3,10 @@
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from datasets import load_dataset
-
 
 OUTPUT = Path("data/echelon/tokenizer_training/training_text.txt")
 MANIFEST = Path("data/echelon/tokenizer_training/manifest.json")
@@ -60,8 +59,7 @@ def main() -> None:
 
             if documents_written % 10_000 == 0:
                 print(
-                    f"Dokumente: {documents_written:,} | "
-                    f"Größe: {bytes_written / 1024**2:.1f} MiB",
+                    f"Dokumente: {documents_written:,} | Größe: {bytes_written / 1024**2:.1f} MiB",
                     flush=True,
                 )
 
@@ -78,7 +76,7 @@ def main() -> None:
         "documents_seen": documents_seen,
         "documents_written": documents_written,
         "sha256": sha256,
-        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "created_utc": datetime.now(UTC).isoformat(),
     }
 
     MANIFEST.write_text(

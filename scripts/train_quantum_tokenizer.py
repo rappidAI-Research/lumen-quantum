@@ -12,9 +12,9 @@ import hashlib
 import json
 import logging
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -78,11 +78,12 @@ def ensure_train_only_path(train_file: str | Path) -> Path:
     lowered_name = path.name.lower()
     if lowered_name != "train.jsonl":
         raise ValueError(
-            "Der quantum-1 Tokenizer darf nur auf train.jsonl trainiert werden. "
-            f"Erhalten: {path}"
+            f"Der quantum-1 Tokenizer darf nur auf train.jsonl trainiert werden. Erhalten: {path}"
         )
     if any(forbidden in str(path).lower() for forbidden in ("validation.jsonl", "test.jsonl")):
-        raise ValueError(f"Validation/Test duerfen nicht fuer Tokenizer-Training genutzt werden: {path}")
+        raise ValueError(
+            f"Validation/Test duerfen nicht fuer Tokenizer-Training genutzt werden: {path}"
+        )
     if not path.exists():
         raise FileNotFoundError(
             f"Trainingsdatei nicht gefunden: {path}. "
@@ -177,7 +178,9 @@ def train_sentencepiece(
         hard_vocab_limit=bool(tokenizer_config.get("hard_vocab_limit", True)),
         byte_fallback=bool(tokenizer_config.get("byte_fallback", False)),
         split_digits=bool(tokenizer_config.get("split_digits", True)),
-        allow_whitespace_only_pieces=bool(tokenizer_config.get("allow_whitespace_only_pieces", True)),
+        allow_whitespace_only_pieces=bool(
+            tokenizer_config.get("allow_whitespace_only_pieces", True)
+        ),
         remove_extra_whitespaces=bool(tokenizer_config.get("remove_extra_whitespaces", False)),
         normalization_rule_name=str(tokenizer_config.get("normalization_rule_name", "nfkc")),
         user_defined_symbols=",".join(chat_tokens),
@@ -258,7 +261,7 @@ def write_manifest(
     ]
     manifest = {
         "tokenizer_name": config.get("project", {}).get("tokenizer_name", "quantum-1-pilot"),
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "training_file": str(train_file),
         "training_data_sha256": sha256_file(train_file),
@@ -336,7 +339,9 @@ def train_quantum_tokenizer(config_path: str | Path) -> Path:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trainiert einen quantum-1 SentencePiece-BPE-Tokenizer.")
+    parser = argparse.ArgumentParser(
+        description="Trainiert einen quantum-1 SentencePiece-BPE-Tokenizer."
+    )
     parser.add_argument(
         "--config",
         default="configs/quantum_1_tokenizer_pilot.yaml",

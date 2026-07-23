@@ -8,20 +8,53 @@ import json
 import logging
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
-
 
 LOGGER = logging.getLogger("lumen.clean_quantum_data")
 
 GERMAN_STOPWORDS = {
-    "der", "die", "das", "und", "ist", "ein", "eine", "mit", "fuer", "nicht",
-    "werden", "wird", "im", "in", "den", "dem", "zu", "auf", "von", "sich",
-    "dass", "auch", "als", "oder", "wenn", "diese", "dieser", "diesen",
-    "ich", "du", "wir", "sie", "er", "es", "hat", "haben", "kann", "sind",
+    "der",
+    "die",
+    "das",
+    "und",
+    "ist",
+    "ein",
+    "eine",
+    "mit",
+    "fuer",
+    "nicht",
+    "werden",
+    "wird",
+    "im",
+    "in",
+    "den",
+    "dem",
+    "zu",
+    "auf",
+    "von",
+    "sich",
+    "dass",
+    "auch",
+    "als",
+    "oder",
+    "wenn",
+    "diese",
+    "dieser",
+    "diesen",
+    "ich",
+    "du",
+    "wir",
+    "sie",
+    "er",
+    "es",
+    "hat",
+    "haben",
+    "kann",
+    "sind",
 }
 
 
@@ -168,7 +201,7 @@ def clean_records(records: list[dict], rules: dict) -> tuple[list[dict], dict]:
             "approx_token_count": approx_token_count(text),
             "was_truncated": truncated,
             "metadata": record.get("metadata", {}),
-            "cleaned_at_utc": datetime.now(timezone.utc).isoformat(),
+            "cleaned_at_utc": datetime.now(UTC).isoformat(),
         }
         cleaned.append(output)
 
@@ -189,7 +222,9 @@ def run(config_path: str | Path) -> Path:
     config = load_config(config_path)
     raw_file = Path(config["paths"]["raw_dir"]) / "fineweb2_hq_deu_latn_raw.jsonl"
     if not raw_file.exists():
-        raise FileNotFoundError(f"Rohdaten fehlen: {raw_file}. Fuehre zuerst download_quantum_data.py aus.")
+        raise FileNotFoundError(
+            f"Rohdaten fehlen: {raw_file}. Fuehre zuerst download_quantum_data.py aus."
+        )
 
     cleaned_dir = Path(config["paths"]["cleaned_dir"])
     cleaned_dir.mkdir(parents=True, exist_ok=True)
@@ -197,13 +232,15 @@ def run(config_path: str | Path) -> Path:
     records = read_jsonl(raw_file)
     cleaned, stats = clean_records(records, config["cleaning"])
     if not cleaned:
-        raise ValueError("Cleaning hat alle Dokumente entfernt. Filterregeln oder Rohdaten pruefen.")
+        raise ValueError(
+            "Cleaning hat alle Dokumente entfernt. Filterregeln oder Rohdaten pruefen."
+        )
 
     output_file = cleaned_dir / "documents_cleaned.jsonl"
     write_jsonl(cleaned, output_file)
 
     metadata = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "seed": int(config["seed"]),
         "input_file": str(raw_file),
         "output_file": str(output_file),
@@ -215,7 +252,12 @@ def run(config_path: str | Path) -> Path:
         json.dumps(metadata, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    LOGGER.info("%d/%d Dokumente behalten: %s", stats["kept_documents"], stats["input_documents"], output_file)
+    LOGGER.info(
+        "%d/%d Dokumente behalten: %s",
+        stats["kept_documents"],
+        stats["input_documents"],
+        output_file,
+    )
     return output_file
 
 

@@ -3,18 +3,15 @@
 from pathlib import Path
 
 import torch
-from transformers import LlamaForCausalLM
-
 from echelon_preflight import build_hf_config, load_config
+from transformers import LlamaForCausalLM
 
 
 def main() -> None:
     if not torch.cuda.is_available():
         raise SystemExit("FEHLER: CUDA ist nicht verfügbar.")
 
-    config = load_config(
-        Path("configs/echelon/quantum-1-echelon-base.yaml")
-    )
+    config = load_config(Path("configs/echelon/quantum-1-echelon-base.yaml"))
     hf_config = build_hf_config(config["model"])
     hf_config.use_cache = False
 

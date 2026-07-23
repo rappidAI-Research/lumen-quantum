@@ -3,11 +3,14 @@ from pathlib import Path
 
 import yaml
 
-from scripts.build_data_manifest import REQUIRED_MANIFEST_FIELDS, run as build_manifest
-from scripts.clean_quantum_data import clean_records, run as clean_data
+from scripts.build_data_manifest import REQUIRED_MANIFEST_FIELDS
+from scripts.build_data_manifest import run as build_manifest
+from scripts.clean_quantum_data import clean_records
+from scripts.clean_quantum_data import run as clean_data
 from scripts.download_quantum_data import raw_record_from_hf, stable_doc_id
 from scripts.inspect_quantum_data import run as inspect_data
-from scripts.sample_quantum_data import split_for_hash, split_records, run as sample_data
+from scripts.sample_quantum_data import run as sample_data
+from scripts.sample_quantum_data import split_for_hash, split_records
 
 
 def _records() -> list[dict]:
@@ -23,7 +26,9 @@ def _records() -> list[dict]:
     ]
     out = []
     for index, text in enumerate(texts):
-        digest = stable_doc_id("epfml/FineWeb2-HQ", "deu_Latn", text, f"https://example.org/{index}")
+        digest = stable_doc_id(
+            "epfml/FineWeb2-HQ", "deu_Latn", text, f"https://example.org/{index}"
+        )
         out.append(
             {
                 "id": digest,
@@ -44,7 +49,11 @@ def _records() -> list[dict]:
 
 def _config(tmp_path: Path) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "dataset_name": "test-dataset", "description": "test"},
+        "project": {
+            "name": "rappidAI Quantum",
+            "dataset_name": "test-dataset",
+            "description": "test",
+        },
         "seed": 123,
         "source": {
             "hf_dataset": "epfml/FineWeb2-HQ",
@@ -101,7 +110,9 @@ def _write_jsonl(path: Path, records: list[dict]) -> None:
 
 
 def _read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def test_no_split_overlap_with_stable_hash_logic():
@@ -155,7 +166,12 @@ def test_deduplication_and_no_empty_documents():
 def test_raw_record_keeps_url_outside_training_text():
     hf_record = {"text": "Das ist ein deutscher Text mit Inhalt.", "url": "https://example.org"}
     config = {
-        "source": {"hf_dataset": "epfml/FineWeb2-HQ", "hf_subset": "deu_Latn", "revision": "main", "split": "train"},
+        "source": {
+            "hf_dataset": "epfml/FineWeb2-HQ",
+            "hf_subset": "deu_Latn",
+            "revision": "main",
+            "split": "train",
+        },
         "download": {"text_fields": ["text"], "url_fields": ["url"]},
     }
     record = raw_record_from_hf(hf_record, config, index=0)

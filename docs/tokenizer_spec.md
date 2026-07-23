@@ -1,4 +1,7 @@
-# Lumen Quantum Tokenizer-Spezifikation
+# rappidAI Quantum — historical pilot tokenizer specification
+
+> Historical from-scratch pilot specification from the earlier Lumen project
+> phase. The current project identity is rappidAI Quantum.
 
 Diese Spezifikation beschreibt den Pilot-Tokenizer `quantum-1-pilot`. Er ist
 noch nicht der finale eingefrorene Tokenizer fuer `quantum-1`, sondern ein

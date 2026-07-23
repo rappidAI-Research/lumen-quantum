@@ -15,9 +15,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-
 
 LOGGER = logging.getLogger("lumen.export_gguf")
 
@@ -40,8 +39,7 @@ def find_llama_converter(llama_cpp_dir: str | Path) -> Path:
     root = Path(llama_cpp_dir)
     if not root.exists():
         raise FileNotFoundError(
-            f"llama.cpp-Verzeichnis nicht gefunden: {root}. "
-            "Gib den Pfad mit --llama-cpp-dir an."
+            f"llama.cpp-Verzeichnis nicht gefunden: {root}. Gib den Pfad mit --llama-cpp-dir an."
         )
 
     candidates = [
@@ -132,7 +130,9 @@ def read_json_if_exists(path: Path) -> dict:
         return json.load(handle)
 
 
-def validate_llama_sentencepiece_compatibility(model_dir: Path, config: dict, tokenizer_dir: Path) -> None:
+def validate_llama_sentencepiece_compatibility(
+    model_dir: Path, config: dict, tokenizer_dir: Path
+) -> None:
     try:
         import sentencepiece as spm
     except ImportError as exc:  # pragma: no cover - depends on local environment.
@@ -170,11 +170,17 @@ def validate_llama_sentencepiece_compatibility(model_dir: Path, config: dict, to
         mapped_piece = special_tokens_map.get(key)
         actual_id = int(sp.piece_to_id(piece))
         if actual_piece != piece:
-            raise ValueError(f"tokenizer_config.json {key} muss {piece!r} sein, ist {actual_piece!r}.")
+            raise ValueError(
+                f"tokenizer_config.json {key} muss {piece!r} sein, ist {actual_piece!r}."
+            )
         if mapped_piece != piece:
-            raise ValueError(f"special_tokens_map.json {key} muss {piece!r} sein, ist {mapped_piece!r}.")
+            raise ValueError(
+                f"special_tokens_map.json {key} muss {piece!r} sein, ist {mapped_piece!r}."
+            )
         if actual_id != expected_id:
-            raise ValueError(f"tokenizer.model {piece!r} muss ID {expected_id} haben, hat ID {actual_id}.")
+            raise ValueError(
+                f"tokenizer.model {piece!r} muss ID {expected_id} haben, hat ID {actual_id}."
+            )
         if config_id_key and int(config.get(config_id_key, -1)) != expected_id:
             raise ValueError(
                 f"config.json {config_id_key} muss {expected_id} sein, ist {config.get(config_id_key)!r}."
@@ -272,7 +278,9 @@ def export_gguf(
     else:
         with tempfile.TemporaryDirectory(prefix="lumen-gguf-") as temp_dir:
             staging_path = prepare_staging_model(model_path, Path(temp_dir) / "hf-model")
-            command = build_convert_command(python_bin, converter, staging_path, output_path, outtype)
+            command = build_convert_command(
+                python_bin, converter, staging_path, output_path, outtype
+            )
             LOGGER.info("Starte GGUF-Export: %s", " ".join(command))
             subprocess.run(command, check=True)
 
@@ -284,7 +292,9 @@ def export_gguf(
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Exportiert models/smoke/final nach GGUF.")
-    parser.add_argument("--model-dir", default="models/smoke/final", help="Lokales HF-Modellverzeichnis.")
+    parser.add_argument(
+        "--model-dir", default="models/smoke/final", help="Lokales HF-Modellverzeichnis."
+    )
     parser.add_argument(
         "--output-file",
         default="models/smoke/quantum-smoke-f16.gguf",
@@ -292,10 +302,15 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--llama-cpp-dir",
-        default="/srv/lumen/llama.cpp",
-        help="Pfad zu llama.cpp mit convert_hf_to_gguf.py.",
+        required=True,
+        help=(
+            "Expliziter Pfad zu einem externen llama.cpp-Checkout mit "
+            "convert_hf_to_gguf.py. Siehe docs/gguf-export.md."
+        ),
     )
-    parser.add_argument("--outtype", default="f16", choices=["f16", "f32", "bf16"], help="GGUF-Ausgabetyp.")
+    parser.add_argument(
+        "--outtype", default="f16", choices=["f16", "f32", "bf16"], help="GGUF-Ausgabetyp."
+    )
     parser.add_argument(
         "--python",
         dest="python_executable",

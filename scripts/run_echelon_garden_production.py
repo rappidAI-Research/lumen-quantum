@@ -7,14 +7,13 @@ import os
 import re
 import time
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import sentencepiece as spm
 import yaml
 from datasets import load_dataset
-
 from echelon_quality_filters import (
     alpha_ratio,
     boilerplate_match_count,
@@ -25,7 +24,6 @@ from echelon_quality_filters import (
 )
 from echelon_shard_writer import Uint16ShardWriter
 
-
 CONFIG_PATH = Path(
     os.environ.get(
         "ECHELON_GARDEN_CONFIG",
@@ -33,9 +31,7 @@ CONFIG_PATH = Path(
     )
 )
 
-CONTROL_CHARS = re.compile(
-    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]"
-)
+CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 EXCESSIVE_BLANK_LINES = re.compile(r"\n{3,}")
 URL_PATTERN = re.compile(
     r"https?://\S+|www\.\S+",
@@ -71,15 +67,10 @@ def ratio(count: int, total: int) -> float:
 
 def stable_split(fingerprint: str, config: dict) -> str:
     splits = config["splits"]
-    bucket = (
-        int(fingerprint[:16], 16)
-        % int(splits["total_buckets"])
-    )
+    bucket = int(fingerprint[:16], 16) % int(splits["total_buckets"])
 
     train_limit = int(splits["train_buckets"])
-    validation_limit = (
-        train_limit + int(splits["validation_buckets"])
-    )
+    validation_limit = train_limit + int(splits["validation_buckets"])
 
     if bucket < train_limit:
         return "train"
@@ -92,9 +83,7 @@ def stable_split(fingerprint: str, config: dict) -> str:
 
 def normalized_fingerprint(text: str) -> str:
     normalized = " ".join(text.lower().split())
-    return hashlib.sha256(
-        normalized.encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def quality_rejection(text: str, config: dict) -> str | None:
@@ -107,28 +96,16 @@ def quality_rejection(text: str, config: dict) -> str | None:
     if length > int(filters["maximum_characters"]):
         return "too_long"
 
-    url_characters = sum(
-        len(match.group(0))
-        for match in URL_PATTERN.finditer(text)
-    )
-    if ratio(url_characters, length) > float(
-        filters["maximum_url_ratio"]
-    ):
+    url_characters = sum(len(match.group(0)) for match in URL_PATTERN.finditer(text))
+    if ratio(url_characters, length) > float(filters["maximum_url_ratio"]):
         return "url_ratio"
 
     digit_count = sum(character.isdigit() for character in text)
-    if ratio(digit_count, length) > float(
-        filters["maximum_digit_ratio"]
-    ):
+    if ratio(digit_count, length) > float(filters["maximum_digit_ratio"]):
         return "digit_ratio"
 
-    symbol_count = sum(
-        not character.isalnum() and not character.isspace()
-        for character in text
-    )
-    if ratio(symbol_count, length) > float(
-        filters["maximum_symbol_ratio"]
-    ):
+    symbol_count = sum(not character.isalnum() and not character.isspace() for character in text)
+    if ratio(symbol_count, length) > float(filters["maximum_symbol_ratio"]):
         return "symbol_ratio"
 
     if len(words(text)) < int(filters["minimum_words"]):
@@ -137,26 +114,20 @@ def quality_rejection(text: str, config: dict) -> str | None:
     if alpha_ratio(text) < float(filters["minimum_alpha_ratio"]):
         return "alpha_ratio"
 
-    if duplicate_line_ratio(text) > float(
-        filters["maximum_duplicate_line_ratio"]
-    ):
+    if duplicate_line_ratio(text) > float(filters["maximum_duplicate_line_ratio"]):
         return "duplicate_lines"
 
-    if repeated_ngram_ratio(text, n=5) > float(
-        filters["maximum_repeated_5gram_ratio"]
-    ):
+    if repeated_ngram_ratio(text, n=5) > float(filters["maximum_repeated_5gram_ratio"]):
         return "repeated_5grams"
 
-    if boilerplate_match_count(text) > int(
-        filters["maximum_boilerplate_matches"]
-    ):
+    if boilerplate_match_count(text) > int(filters["maximum_boilerplate_matches"]):
         return "boilerplate"
 
     return None
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def atomic_write_json(path: Path, payload: dict) -> None:
@@ -186,121 +157,12 @@ def load_checkpoint(
     if not path.exists():
         return None
 
-    checkpoint = json.loads(
-        path.read_text(encoding="utf-8")
-    )
+    checkpoint = json.loads(path.read_text(encoding="utf-8"))
 
     stored_hash = checkpoint.get("config_sha256")
 
     if stored_hash != expected_config_hash:
-        raise RuntimeError(
-            "Checkpoint und Produktionskonfiguration stimmen "
-            "nicht überein."
-        )
-
-    return checkpoint
-
-
-def quality_rejection(text: str, config: dict) -> str | None:
-    filters = config["filters"]
-    length = len(text)
-
-    if length < int(filters["minimum_characters"]):
-        return "too_short"
-
-    if length > int(filters["maximum_characters"]):
-        return "too_long"
-
-    url_characters = sum(
-        len(match.group(0))
-        for match in URL_PATTERN.finditer(text)
-    )
-    if ratio(url_characters, length) > float(
-        filters["maximum_url_ratio"]
-    ):
-        return "url_ratio"
-
-    digit_count = sum(character.isdigit() for character in text)
-    if ratio(digit_count, length) > float(
-        filters["maximum_digit_ratio"]
-    ):
-        return "digit_ratio"
-
-    symbol_count = sum(
-        not character.isalnum() and not character.isspace()
-        for character in text
-    )
-    if ratio(symbol_count, length) > float(
-        filters["maximum_symbol_ratio"]
-    ):
-        return "symbol_ratio"
-
-    if len(words(text)) < int(filters["minimum_words"]):
-        return "too_few_words"
-
-    if alpha_ratio(text) < float(filters["minimum_alpha_ratio"]):
-        return "alpha_ratio"
-
-    if duplicate_line_ratio(text) > float(
-        filters["maximum_duplicate_line_ratio"]
-    ):
-        return "duplicate_lines"
-
-    if repeated_ngram_ratio(text, n=5) > float(
-        filters["maximum_repeated_5gram_ratio"]
-    ):
-        return "repeated_5grams"
-
-    if boilerplate_match_count(text) > int(
-        filters["maximum_boilerplate_matches"]
-    ):
-        return "boilerplate"
-
-    return None
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def atomic_write_json(path: Path, payload: dict) -> None:
-    import os
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = path.with_suffix(path.suffix + ".tmp")
-
-    with temporary_path.open("w", encoding="utf-8") as handle:
-        json.dump(
-            payload,
-            handle,
-            ensure_ascii=False,
-            indent=2,
-        )
-        handle.write("\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-
-    os.replace(temporary_path, path)
-
-
-def load_checkpoint(
-    path: Path,
-    expected_config_hash: str,
-) -> dict[str, Any] | None:
-    if not path.exists():
-        return None
-
-    checkpoint = json.loads(
-        path.read_text(encoding="utf-8")
-    )
-
-    stored_hash = checkpoint.get("config_sha256")
-
-    if stored_hash != expected_config_hash:
-        raise RuntimeError(
-            "Checkpoint und Produktionskonfiguration stimmen "
-            "nicht überein."
-        )
+        raise RuntimeError("Checkpoint und Produktionskonfiguration stimmen nicht überein.")
 
     return checkpoint
 
@@ -327,11 +189,7 @@ def create_writers(
 ) -> dict[str, Uint16ShardWriter]:
     output_root = Path(config["output"]["root"])
     tokenized_root = output_root / "tokenized"
-    writer_states = (
-        checkpoint.get("writers", {})
-        if checkpoint is not None
-        else {}
-    )
+    writer_states = checkpoint.get("writers", {}) if checkpoint is not None else {}
 
     writers = {}
 
@@ -339,9 +197,7 @@ def create_writers(
         writers[split] = Uint16ShardWriter(
             split=split,
             output_directory=tokenized_root / split,
-            tokens_per_shard=int(
-                config["targets"]["tokens_per_shard"]
-            ),
+            tokens_per_shard=int(config["targets"]["tokens_per_shard"]),
             target_tokens=target_tokens_for_split(
                 split,
                 config,
@@ -370,15 +226,10 @@ def load_source_dataset(
     consumed = 0
 
     if checkpoint is not None:
-        consumed = int(
-            checkpoint.get("source_documents_consumed", 0)
-        )
+        consumed = int(checkpoint.get("source_documents_consumed", 0))
         source_state = checkpoint.get("source_state")
 
-        if (
-            source_state is not None
-            and hasattr(dataset, "load_state_dict")
-        ):
+        if source_state is not None and hasattr(dataset, "load_state_dict"):
             dataset.load_state_dict(source_state)
             resume_mode = "state_dict"
 
@@ -409,14 +260,10 @@ def initialize_runtime():
             config_hash,
         )
 
-    tokenizer = spm.SentencePieceProcessor(
-        model_file=config["tokenizer"]["model"]
-    )
+    tokenizer = spm.SentencePieceProcessor(model_file=config["tokenizer"]["model"])
 
     if tokenizer.get_piece_size() > 65536:
-        raise RuntimeError(
-            "Tokenizer-Vokabular passt nicht in uint16."
-        )
+        raise RuntimeError("Tokenizer-Vokabular passt nicht in uint16.")
 
     writers = create_writers(config, checkpoint)
 
@@ -427,17 +274,9 @@ def initialize_runtime():
         checkpoint,
     )
 
-    counters = Counter(
-        checkpoint.get("counters", {})
-        if checkpoint is not None
-        else {}
-    )
+    counters = Counter(checkpoint.get("counters", {}) if checkpoint is not None else {})
 
-    started_utc = (
-        checkpoint.get("started_utc")
-        if checkpoint is not None
-        else utc_now()
-    )
+    started_utc = checkpoint.get("started_utc") if checkpoint is not None else utc_now()
 
     print("=== GARDEN-PRODUKTION INITIALISIERT ===")
     print("Dataset:", config["source"]["dataset"])
@@ -447,11 +286,7 @@ def initialize_runtime():
     print("Bereits konsumierte Dokumente:", consumed)
 
     for split in SPLITS:
-        print(
-            f"{split}: "
-            f"{writers[split].total_tokens:,} / "
-            f"{writers[split].target_tokens:,} Tokens"
-        )
+        print(f"{split}: {writers[split].total_tokens:,} / {writers[split].target_tokens:,} Tokens")
 
     return {
         "config": config,
@@ -466,21 +301,14 @@ def initialize_runtime():
         "started_utc": started_utc,
         "source_documents_consumed": consumed,
         "resume_mode": resume_mode,
-        "source_state": (
-            checkpoint.get("source_state")
-            if checkpoint is not None
-            else None
-        ),
+        "source_state": (checkpoint.get("source_state") if checkpoint is not None else None),
     }
 
 
 def all_writers_finished(
     writers: dict[str, Uint16ShardWriter],
 ) -> bool:
-    return all(
-        writers[split].finished
-        for split in SPLITS
-    )
+    return all(writers[split].finished for split in SPLITS)
 
 
 def build_checkpoint_payload(
@@ -494,18 +322,12 @@ def build_checkpoint_payload(
         "pipeline": "quantum-1-echelon-garden-production",
         "config_sha256": runtime["config_hash"],
         "dataset": runtime["config"]["source"]["dataset"],
-        "dataset_configuration": runtime["config"]["source"][
-            "configuration"
-        ],
-        "dataset_revision": runtime["config"]["source"][
-            "revision"
-        ],
+        "dataset_configuration": runtime["config"]["source"]["configuration"],
+        "dataset_revision": runtime["config"]["source"]["revision"],
         "started_utc": runtime["started_utc"],
         "updated_utc": utc_now(),
         "complete": complete,
-        "source_documents_consumed": runtime[
-            "source_documents_consumed"
-        ],
+        "source_documents_consumed": runtime["source_documents_consumed"],
         "resume_strategy": (
             "dataset_state_dict"
             if runtime.get("source_state") is not None
@@ -513,10 +335,7 @@ def build_checkpoint_payload(
         ),
         "source_state": runtime.get("source_state"),
         "counters": dict(runtime["counters"]),
-        "writers": {
-            split: writers[split].state_dict()
-            for split in SPLITS
-        },
+        "writers": {split: writers[split].state_dict() for split in SPLITS},
     }
 
 
@@ -576,23 +395,17 @@ def print_progress(
         flush=True,
     )
     print(
-        f"Dokumente akzeptiert: "
-        f"{counters.get('documents_accepted', 0):,}",
+        f"Dokumente akzeptiert: {counters.get('documents_accepted', 0):,}",
         flush=True,
     )
     print(
-        f"Geschwindigkeit: "
-        f"{documents_per_second:,.2f} Dokumente/s",
+        f"Geschwindigkeit: {documents_per_second:,.2f} Dokumente/s",
         flush=True,
     )
 
     for split in SPLITS:
         writer = runtime["writers"][split]
-        percentage = (
-            100.0
-            * writer.total_tokens
-            / max(writer.target_tokens, 1)
-        )
+        percentage = 100.0 * writer.total_tokens / max(writer.target_tokens, 1)
 
         print(
             f"{split}: {writer.total_tokens:,} / "
@@ -608,12 +421,8 @@ def process_dataset(runtime: dict[str, Any]) -> None:
     writers = runtime["writers"]
     counters = runtime["counters"]
 
-    checkpoint_interval = int(
-        config["runtime"]["checkpoint_every_documents"]
-    )
-    progress_interval = int(
-        config["runtime"]["progress_every_documents"]
-    )
+    checkpoint_interval = int(config["runtime"]["checkpoint_every_documents"])
+    progress_interval = int(config["runtime"]["progress_every_documents"])
 
     start_time = time.monotonic()
     controlled_stop_after = int(
@@ -641,13 +450,9 @@ def process_dataset(runtime: dict[str, Any]) -> None:
             )
 
             if metadata_reason is not None:
-                counters[
-                    f"rejected_{metadata_reason}"
-                ] += 1
+                counters[f"rejected_{metadata_reason}"] += 1
             else:
-                text = clean_text(
-                    str(sample.get("text", ""))
-                )
+                text = clean_text(str(sample.get("text", "")))
 
                 quality_reason = quality_rejection(
                     text,
@@ -655,22 +460,16 @@ def process_dataset(runtime: dict[str, Any]) -> None:
                 )
 
                 if quality_reason is not None:
-                    counters[
-                        f"rejected_{quality_reason}"
-                    ] += 1
+                    counters[f"rejected_{quality_reason}"] += 1
                 else:
-                    fingerprint = normalized_fingerprint(
-                        text
-                    )
+                    fingerprint = normalized_fingerprint(text)
                     split = stable_split(
                         fingerprint,
                         config,
                     )
 
                     if writers[split].finished:
-                        counters[
-                            f"skipped_finished_{split}"
-                        ] += 1
+                        counters[f"skipped_finished_{split}"] += 1
                     else:
                         token_ids = tokenizer.encode(
                             text,
@@ -679,25 +478,15 @@ def process_dataset(runtime: dict[str, Any]) -> None:
                             add_eos=True,
                         )
 
-                        written = writers[split].write(
-                            token_ids
-                        )
+                        written = writers[split].write(token_ids)
 
                         if written > 0:
-                            counters[
-                                "documents_accepted"
-                            ] += 1
-                            counters[
-                                f"documents_accepted_{split}"
-                            ] += 1
-                            counters[
-                                f"tokens_written_{split}"
-                            ] += written
+                            counters["documents_accepted"] += 1
+                            counters[f"documents_accepted_{split}"] += 1
+                            counters[f"tokens_written_{split}"] += written
 
                             if written < len(token_ids):
-                                counters[
-                                    f"documents_truncated_{split}"
-                                ] += 1
+                                counters[f"documents_truncated_{split}"] += 1
 
             if consumed % progress_interval == 0:
                 print_progress(
@@ -708,20 +497,15 @@ def process_dataset(runtime: dict[str, Any]) -> None:
             if consumed % checkpoint_interval == 0:
                 save_runtime_checkpoint(runtime)
                 print(
-                    f"Checkpoint gespeichert nach "
-                    f"{consumed:,} Dokumenten.",
+                    f"Checkpoint gespeichert nach {consumed:,} Dokumenten.",
                     flush=True,
                 )
 
-            if (
-                controlled_stop_after > 0
-                and consumed >= controlled_stop_after
-            ):
+            if controlled_stop_after > 0 and consumed >= controlled_stop_after:
                 save_runtime_checkpoint(runtime)
                 runtime["controlled_test_stop"] = True
                 print(
-                    f"Kontrollierter Teststopp nach "
-                    f"{consumed:,} Dokumenten.",
+                    f"Kontrollierter Teststopp nach {consumed:,} Dokumenten.",
                     flush=True,
                 )
                 return
@@ -754,8 +538,7 @@ def process_dataset(runtime: dict[str, Any]) -> None:
                 close_method()
             except Exception as error:
                 print(
-                    "Warnung beim Schließen des Dataset-Streams: "
-                    f"{error}",
+                    f"Warnung beim Schließen des Dataset-Streams: {error}",
                     flush=True,
                 )
 
@@ -782,28 +565,17 @@ def build_manifest(
         "config_sha256": runtime["config_hash"],
         "dataset": {
             "name": runtime["config"]["source"]["dataset"],
-            "configuration": runtime["config"]["source"][
-                "configuration"
-            ],
+            "configuration": runtime["config"]["source"]["configuration"],
             "split": runtime["config"]["source"]["split"],
-            "revision": runtime["config"]["source"][
-                "revision"
-            ],
+            "revision": runtime["config"]["source"]["revision"],
         },
         "tokenizer": {
             "model": runtime["config"]["tokenizer"]["model"],
-            "vocabulary_size": runtime[
-                "tokenizer"
-            ].get_piece_size(),
+            "vocabulary_size": runtime["tokenizer"].get_piece_size(),
         },
-        "source_documents_consumed": runtime[
-            "source_documents_consumed"
-        ],
+        "source_documents_consumed": runtime["source_documents_consumed"],
         "counters": dict(runtime["counters"]),
-        "splits": {
-            split: writers[split].state_dict()
-            for split in SPLITS
-        },
+        "splits": {split: writers[split].state_dict() for split in SPLITS},
     }
 
 
@@ -819,10 +591,7 @@ def close_writers(
             errors.append(f"{split}: {error}")
 
     if errors:
-        raise RuntimeError(
-            "Fehler beim Schließen der Shard-Writer: "
-            + "; ".join(errors)
-        )
+        raise RuntimeError("Fehler beim Schließen der Shard-Writer: " + "; ".join(errors))
 
 
 def main() -> None:
@@ -860,9 +629,7 @@ def main() -> None:
             )
             return
 
-        completed = all_writers_finished(
-            runtime["writers"]
-        )
+        completed = all_writers_finished(runtime["writers"])
 
         save_runtime_checkpoint(
             runtime,
@@ -885,10 +652,7 @@ def main() -> None:
         print_progress(runtime, elapsed_seconds)
 
         if not completed:
-            raise RuntimeError(
-                "Der Quelldatensatz endete, bevor alle Tokenziele "
-                "erreicht wurden."
-            )
+            raise RuntimeError("Der Quelldatensatz endete, bevor alle Tokenziele erreicht wurden.")
 
         print(
             "\nGarden-Produktionspipeline vollständig abgeschlossen.",

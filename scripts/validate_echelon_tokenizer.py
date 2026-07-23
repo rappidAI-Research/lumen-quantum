@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 
 def load_test_cases():
     from tests.echelon.test_tokenizer_cases import TEST_CASES
+
     return TEST_CASES
 
 
@@ -20,9 +21,7 @@ def load_tokenizer(path: Path):
     model_files = list(path.glob("*.model"))
 
     if not model_files:
-        raise FileNotFoundError(
-            f"Kein Tokenizer-Modell gefunden in {path}"
-        )
+        raise FileNotFoundError(f"Kein Tokenizer-Modell gefunden in {path}")
 
     tokenizer = spm.SentencePieceProcessor()
     tokenizer.load(str(model_files[0]))
@@ -46,12 +45,8 @@ def main():
     tokenizer_path = Path("tokenizer/echelon")
 
     if not list(tokenizer_path.glob("*.model")):
-        print(
-            "INFO: Noch kein trainierter Echelon-Tokenizer vorhanden."
-        )
-        print(
-            "Die Teststruktur ist vorbereitet."
-        )
+        print("INFO: Noch kein trainierter Echelon-Tokenizer vorhanden.")
+        print("Die Teststruktur ist vorbereitet.")
         return
 
     tokenizer = load_tokenizer(tokenizer_path)
@@ -61,10 +56,7 @@ def main():
     for case in load_test_cases():
         results.append(validate_roundtrip(tokenizer, case))
 
-    failed = [
-        item for item in results
-        if not item["exact_match"]
-    ]
+    failed = [item for item in results if not item["exact_match"]]
 
     report = {
         "total_cases": len(results),
@@ -72,10 +64,7 @@ def main():
         "results": results,
     }
 
-    output = Path(
-        "reports/quantum-1-echelon/"
-        "tokenizer_validation.json"
-    )
+    output = Path("reports/quantum-1-echelon/tokenizer_validation.json")
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -89,14 +78,10 @@ def main():
     )
 
     if failed:
-        print(
-            f"FEHLER: {len(failed)} Roundtrip-Probleme"
-        )
+        print(f"FEHLER: {len(failed)} Roundtrip-Probleme")
         sys.exit(1)
 
-    print(
-        f"Tokenizer-Test bestanden: {len(results)} Fälle"
-    )
+    print(f"Tokenizer-Test bestanden: {len(results)} Fälle")
 
 
 if __name__ == "__main__":

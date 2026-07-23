@@ -1,4 +1,7 @@
-# Data Manifest
+# rappidAI Quantum — data manifest
+
+> Historical pilot specification from the earlier Lumen project phase. The
+> current project identity is rappidAI Quantum.
 
 Dieses Dokument beschreibt die Pflichtangaben fuer jede quantum-1-Datenversion.
 

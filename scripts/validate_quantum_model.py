@@ -6,9 +6,9 @@ import argparse
 import json
 import logging
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
@@ -65,7 +65,9 @@ def run_forward_pass(model: LlamaForCausalLM, vocab_size: int) -> dict:
         raise ValueError("Forward Pass lieferte keinen endlichen Loss.")
     expected_shape = (1, 16, vocab_size)
     if tuple(outputs.logits.shape) != expected_shape:
-        raise ValueError(f"Logit-Shape falsch: {tuple(outputs.logits.shape)}, erwartet {expected_shape}.")
+        raise ValueError(
+            f"Logit-Shape falsch: {tuple(outputs.logits.shape)}, erwartet {expected_shape}."
+        )
     return {"loss": float(outputs.loss.item()), "logits_shape": list(outputs.logits.shape)}
 
 
@@ -78,8 +80,14 @@ def validate_quantum_model(config_path: str | Path) -> dict:
 
     if llama_config.vocab_size != tokenizer_info.vocab_size:
         raise ValueError("Tokenizer- und Modell-vocab_size stimmen nicht ueberein.")
-    if llama_config.bos_token_id != 1 or llama_config.eos_token_id != 2 or llama_config.pad_token_id != 3:
-        raise ValueError("BOS/EOS/PAD Token-IDs stimmen nicht mit dem LLaMA-kompatiblen Tokenizer ueberein.")
+    if (
+        llama_config.bos_token_id != 1
+        or llama_config.eos_token_id != 2
+        or llama_config.pad_token_id != 3
+    ):
+        raise ValueError(
+            "BOS/EOS/PAD Token-IDs stimmen nicht mit dem LLaMA-kompatiblen Tokenizer ueberein."
+        )
     if getattr(llama_config, "unk_token_id", 0) != 0:
         raise ValueError("UNK Token-ID muss 0 sein.")
 
@@ -90,7 +98,7 @@ def validate_quantum_model(config_path: str | Path) -> dict:
     parameter_count = count_parameters(model)
 
     report = {
-        "validated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "validated_at_utc": datetime.now(UTC).isoformat(),
         "model_name": config["project"]["model_name"],
         "tokenizer_dir": str(tokenizer_info.tokenizer_dir),
         "vocab_size": tokenizer_info.vocab_size,
@@ -117,7 +125,9 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Iterable[str] | None = None) -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
     args = parse_args(argv)
     report = validate_quantum_model(args.config)
     if args.json:

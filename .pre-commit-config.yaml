@@ -1,0 +1,45 @@
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 2700fd5671c633760d912769c041bfcde2b9a01b
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: validate-configs
+        name: validate repository configs
+        entry: python scripts/validate_repository_configs.py
+        language: python
+        additional_dependencies: ["PyYAML>=6.0.1,<7"]
+        pass_filenames: false
+      - id: repository-health
+        name: repository health
+        entry: python scripts/repository_health.py
+        language: python
+        pass_filenames: false
+      - id: markdown-links
+        name: local Markdown links
+        entry: python scripts/check_markdown_links.py
+        language: python
+        pass_filenames: false
+      - id: secret-patterns
+        name: high-confidence secret patterns
+        entry: python scripts/check_secrets.py
+        language: python
+        pass_filenames: false

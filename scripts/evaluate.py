@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 try:
     from .generate import generate_text, load_model_from_checkpoint
@@ -64,7 +64,9 @@ def run_evaluation(
 ) -> Path:
     checkpoint_path = Path(checkpoint)
     resolved_tokenizer_dir = Path(tokenizer_dir)
-    if (checkpoint_path / "tokenizer" / "tokenizer.model").exists() and str(tokenizer_dir) == "tokenizer/smoke":
+    if (checkpoint_path / "tokenizer" / "tokenizer.model").exists() and str(
+        tokenizer_dir
+    ) == "tokenizer/smoke":
         resolved_tokenizer_dir = checkpoint_path / "tokenizer"
 
     tokenizer = load_fast_tokenizer(resolved_tokenizer_dir)
@@ -85,7 +87,7 @@ def run_evaluation(
             )
             record = {
                 "index": index,
-                "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                "created_at_utc": datetime.now(UTC).isoformat(),
                 "checkpoint": str(checkpoint_path),
                 "prompt": prompt,
                 "generated_text": generated,
@@ -99,12 +101,22 @@ def run_evaluation(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fuehrt eine einfache lokale Smoke-Evaluation aus.")
-    parser.add_argument("--checkpoint", default="models/smoke/final", help="Lokaler Checkpoint-Ordner.")
-    parser.add_argument("--tokenizer-dir", default="tokenizer/smoke", help="Lokaler Tokenizer-Ordner.")
+    parser = argparse.ArgumentParser(
+        description="Fuehrt eine einfache lokale Smoke-Evaluation aus."
+    )
+    parser.add_argument(
+        "--checkpoint", default="models/smoke/final", help="Lokaler Checkpoint-Ordner."
+    )
+    parser.add_argument(
+        "--tokenizer-dir", default="tokenizer/smoke", help="Lokaler Tokenizer-Ordner."
+    )
     parser.add_argument("--eval-file", help="Textdatei mit einem Prompt pro Zeile.")
-    parser.add_argument("--eval-dir", default="data/evals", help="Ordner fuer automatische Eval-Dateisuche.")
-    parser.add_argument("--output-file", default="data/evals/smoke_results.jsonl", help="Zieldatei als JSONL.")
+    parser.add_argument(
+        "--eval-dir", default="data/evals", help="Ordner fuer automatische Eval-Dateisuche."
+    )
+    parser.add_argument(
+        "--output-file", default="data/evals/smoke_results.jsonl", help="Zieldatei als JSONL."
+    )
     parser.add_argument("--max-new-tokens", type=int, default=80)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-p", type=float, default=0.9)

@@ -4,7 +4,6 @@ import hashlib
 import re
 from collections import Counter
 
-
 WORD_PATTERN = re.compile(r"\w+", re.UNICODE)
 
 BOILERPLATE_PATTERNS = [
@@ -39,21 +38,13 @@ def alpha_ratio(text: str) -> float:
 
 
 def duplicate_line_ratio(text: str) -> float:
-    lines = [
-        " ".join(line.lower().split())
-        for line in text.splitlines()
-        if line.strip()
-    ]
+    lines = [" ".join(line.lower().split()) for line in text.splitlines() if line.strip()]
 
     if not lines:
         return 0.0
 
     counts = Counter(lines)
-    duplicate_lines = sum(
-        count - 1
-        for count in counts.values()
-        if count > 1
-    )
+    duplicate_lines = sum(count - 1 for count in counts.values() if count > 1)
 
     return duplicate_lines / len(lines)
 
@@ -64,27 +55,16 @@ def repeated_ngram_ratio(text: str, n: int = 5) -> float:
     if len(tokens) < n:
         return 0.0
 
-    ngrams = [
-        tuple(tokens[index:index + n])
-        for index in range(len(tokens) - n + 1)
-    ]
+    ngrams = [tuple(tokens[index : index + n]) for index in range(len(tokens) - n + 1)]
 
     counts = Counter(ngrams)
-    repeated = sum(
-        count - 1
-        for count in counts.values()
-        if count > 1
-    )
+    repeated = sum(count - 1 for count in counts.values() if count > 1)
 
     return repeated / len(ngrams)
 
 
 def boilerplate_match_count(text: str) -> int:
-    return sum(
-        1
-        for pattern in BOILERPLATE_PATTERNS
-        if pattern.search(text)
-    )
+    return sum(1 for pattern in BOILERPLATE_PATTERNS if pattern.search(text))
 
 
 def simhash64(text: str) -> int:
@@ -142,9 +122,7 @@ class SimHashIndex:
         self.band_width = bits // bands
         self.band_mask = (1 << self.band_width) - 1
 
-        self._buckets: list[dict[int, list[int]]] = [
-            {} for _ in range(bands)
-        ]
+        self._buckets: list[dict[int, list[int]]] = [{} for _ in range(bands)]
 
     def _band_key(self, value: int, band: int) -> int:
         shift = band * self.band_width
@@ -155,13 +133,10 @@ class SimHashIndex:
 
         for band in range(self.bands):
             key = self._band_key(value, band)
-            candidates.update(
-                self._buckets[band].get(key, [])
-            )
+            candidates.update(self._buckets[band].get(key, []))
 
         return any(
-            hamming_distance(value, candidate)
-            <= self.maximum_hamming_distance
+            hamming_distance(value, candidate) <= self.maximum_hamming_distance
             for candidate in candidates
         )
 
@@ -174,10 +149,7 @@ class SimHashIndex:
         if not self._buckets:
             return 0
 
-        return sum(
-            len(values)
-            for values in self._buckets[0].values()
-        )
+        return sum(len(values) for values in self._buckets[0].values())
 
 
 def metadata_rejection(sample: dict, config: dict) -> str | None:

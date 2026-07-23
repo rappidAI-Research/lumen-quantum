@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   dataset_name: "quantum-1-fineweb2hq-deu-pilot"
   description: "Kleine reproduzierbare deutsche Pilot-Datenpipeline fuer quantum-1."
 

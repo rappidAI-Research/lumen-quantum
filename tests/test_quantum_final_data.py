@@ -56,7 +56,11 @@ def _config(tmp_path: Path, use_pilot_paths: bool = False) -> tuple[Path, Path, 
     tokenizer_dir = tmp_path / "tokenizer" / "quantum-1"
 
     data_config = {
-        "project": {"name": "Lumen Quantum", "dataset_name": "final-test", "description": "test"},
+        "project": {
+            "name": "rappidAI Quantum",
+            "dataset_name": "final-test",
+            "description": "test",
+        },
         "seed": 20260704,
         "source": {
             "hf_dataset": "epfml/FineWeb2-HQ",
@@ -66,14 +70,24 @@ def _config(tmp_path: Path, use_pilot_paths: bool = False) -> tuple[Path, Path, 
             "license": "test",
             "citation": "test",
         },
-        "targets": {"context_length": 512, "train_tokens": 1024, "validation_tokens": 512, "test_tokens": 512},
+        "targets": {
+            "context_length": 512,
+            "train_tokens": 1024,
+            "validation_tokens": 512,
+            "test_tokens": 512,
+        },
         "paths": {
             "raw_dir": str(raw_dir),
             "cleaned_dir": str(cleaned_dir),
             "manifest_dir": str(manifest_dir),
             "report_dir": str(report_dir),
         },
-        "download": {"streaming": True, "max_documents": 10, "max_raw_bytes": 100000, "shuffle_buffer_size": 10},
+        "download": {
+            "streaming": True,
+            "max_documents": 10,
+            "max_raw_bytes": 100000,
+            "shuffle_buffer_size": 10,
+        },
         "cleaning": {
             "min_chars": 80,
             "max_chars": 1000,
@@ -85,11 +99,16 @@ def _config(tmp_path: Path, use_pilot_paths: bool = False) -> tuple[Path, Path, 
             "remove_exact_duplicates": True,
             "boilerplate_patterns": [],
         },
-        "sampling": {"split_seed": 20260704, "train_ratio": 0.98, "validation_ratio": 0.01, "test_ratio": 0.01},
+        "sampling": {
+            "split_seed": 20260704,
+            "train_ratio": 0.98,
+            "validation_ratio": 0.01,
+            "test_ratio": 0.01,
+        },
         "manifest": {"version": "quantum-1-final-test-v1", "notes": "test"},
     }
     tokenization_config = {
-        "project": {"name": "Lumen Quantum", "dataset_name": "final-tokenized-test"},
+        "project": {"name": "rappidAI Quantum", "dataset_name": "final-tokenized-test"},
         "seed": 20260704,
         "tokenizer": {
             "dir": str(tokenizer_dir),
@@ -103,15 +122,29 @@ def _config(tmp_path: Path, use_pilot_paths: bool = False) -> tuple[Path, Path, 
             "text_field": "text",
             "document_hash_field": "sha256",
         },
-        "output": {"dir": str(tokenized_dir), "manifest_file": "tokenization_manifest.json", "overwrite": False},
-        "packing": {"context_length": 512, "add_eos_after_each_document": True, "pad_remainder": True},
-        "limits": {"train_max_tokens": 4096, "validation_max_tokens": 2048, "test_max_tokens": 2048},
+        "output": {
+            "dir": str(tokenized_dir),
+            "manifest_file": "tokenization_manifest.json",
+            "overwrite": False,
+        },
+        "packing": {
+            "context_length": 512,
+            "add_eos_after_each_document": True,
+            "pad_remainder": True,
+        },
+        "limits": {
+            "train_max_tokens": 4096,
+            "validation_max_tokens": 2048,
+            "test_max_tokens": 2048,
+        },
     }
 
     data_config_path = tmp_path / "quantum_1_final_data.yaml"
     tokenization_config_path = tmp_path / "quantum_1_final_tokenizer.yaml"
     data_config_path.write_text(yaml.safe_dump(data_config, sort_keys=False), encoding="utf-8")
-    tokenization_config_path.write_text(yaml.safe_dump(tokenization_config, sort_keys=False), encoding="utf-8")
+    tokenization_config_path.write_text(
+        yaml.safe_dump(tokenization_config, sort_keys=False), encoding="utf-8"
+    )
     return data_config_path, tokenization_config_path, cleaned_dir, tokenized_dir
 
 
@@ -128,11 +161,17 @@ def _write_manifest(data_config_path: Path) -> None:
         "seed": config["seed"],
         "filter_rules": config["cleaning"],
         "document_counts": {"raw": 3, "cleaned": 3, "train": 1, "validation": 1, "test": 1},
-        "text_amount": {"train": {"chars": 1, "words": 1}, "validation": {"chars": 1, "words": 1}, "test": {"chars": 1, "words": 1}},
+        "text_amount": {
+            "train": {"chars": 1, "words": 1},
+            "validation": {"chars": 1, "words": 1},
+            "test": {"chars": 1, "words": 1},
+        },
         "estimated_tokens": {"train": 1, "validation": 1, "test": 1},
         "file_hashes": {},
     }
-    (manifest_dir / "data_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (manifest_dir / "data_manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
 
 
 def _write_splits(cleaned_dir: Path, overlap: bool = False) -> dict[str, list[dict]]:
@@ -149,7 +188,13 @@ def _write_splits(cleaned_dir: Path, overlap: bool = False) -> dict[str, list[di
     return records
 
 
-def _write_tokenized(tokenized_dir: Path, records: dict[str, list[dict]], vocab_size: int = 32, bad_token: bool = False, width: int = 512) -> None:
+def _write_tokenized(
+    tokenized_dir: Path,
+    records: dict[str, list[dict]],
+    vocab_size: int = 32,
+    bad_token: bool = False,
+    width: int = 512,
+) -> None:
     tokenized_dir.mkdir(parents=True, exist_ok=True)
     manifest = {"tokenizer": {"vocab_size": vocab_size}, "splits": {}}
     for split, split_records in records.items():
@@ -162,9 +207,19 @@ def _write_tokenized(tokenized_dir: Path, records: dict[str, list[dict]], vocab_
             "document_hashes": [record["sha256"] for record in split_records],
             "tokens_before_padding": int(attention_mask.sum().item()),
         }
-        torch.save({"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels, "metadata": metadata}, tokenized_dir / f"{split}.pt")
+        torch.save(
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "labels": labels,
+                "metadata": metadata,
+            },
+            tokenized_dir / f"{split}.pt",
+        )
         manifest["splits"][split] = {"tokens_before_padding": metadata["tokens_before_padding"]}
-    (tokenized_dir / "tokenization_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (tokenized_dir / "tokenization_manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
 
 
 def test_final_data_validation_accepts_disjoint_512_tokenized_splits(tmp_path):
@@ -211,7 +266,9 @@ def test_final_data_validation_rejects_non_512_sequences(tmp_path):
 
 
 def test_final_data_validation_rejects_pilot_paths(tmp_path):
-    data_config_path, tokenization_config_path, cleaned_dir, tokenized_dir = _config(tmp_path, use_pilot_paths=True)
+    data_config_path, tokenization_config_path, cleaned_dir, tokenized_dir = _config(
+        tmp_path, use_pilot_paths=True
+    )
     records = _write_splits(cleaned_dir)
     _write_manifest(data_config_path)
     _write_tokenized(tokenized_dir, records)

@@ -28,28 +28,20 @@ class Uint16ShardWriter:
         self.shard_index = int(state.get("shard_index", 0))
         self.shard_tokens = int(state.get("shard_tokens", 0))
         self.total_tokens = int(state.get("total_tokens", 0))
-        self.completed_shards = list(
-            state.get("completed_shards", [])
-        )
+        self.completed_shards = list(state.get("completed_shards", []))
 
         self.handle = None
         self.current_path: Path | None = None
 
         if self.total_tokens < self.target_tokens:
             self._reconcile_from_checkpoint()
-            self._open_current_shard(
-                truncate_to=state.get("current_file_size_bytes")
-            )
+            self._open_current_shard(truncate_to=state.get("current_file_size_bytes"))
 
     def _part_path(self, index: int) -> Path:
-        return self.output_directory / (
-            f"{self.split}-{index:05d}.bin.part"
-        )
+        return self.output_directory / (f"{self.split}-{index:05d}.bin.part")
 
     def _final_path(self, index: int) -> Path:
-        return self.output_directory / (
-            f"{self.split}-{index:05d}.bin"
-        )
+        return self.output_directory / (f"{self.split}-{index:05d}.bin")
 
     @staticmethod
     def _index_from_path(path: Path) -> int:
@@ -74,15 +66,11 @@ class Uint16ShardWriter:
 
         # Alle später entstandenen Dateien gehören zu nicht
         # checkpointeten Fortschritten und müssen verworfen werden.
-        for path in self.output_directory.glob(
-            f"{self.split}-*.bin"
-        ):
+        for path in self.output_directory.glob(f"{self.split}-*.bin"):
             if self._index_from_path(path) > self.shard_index:
                 path.unlink()
 
-        for path in self.output_directory.glob(
-            f"{self.split}-*.bin.part"
-        ):
+        for path in self.output_directory.glob(f"{self.split}-*.bin.part"):
             if self._index_from_path(path) > self.shard_index:
                 path.unlink()
 
@@ -141,15 +129,13 @@ class Uint16ShardWriter:
         written = 0
 
         while offset < len(values):
-            shard_space = (
-                self.tokens_per_shard - self.shard_tokens
-            )
+            shard_space = self.tokens_per_shard - self.shard_tokens
             chunk_size = min(
                 shard_space,
                 len(values) - offset,
             )
 
-            chunk = values[offset:offset + chunk_size]
+            chunk = values[offset : offset + chunk_size]
             self.handle.write(chunk.tobytes(order="C"))
 
             self.shard_tokens += chunk_size
@@ -157,10 +143,7 @@ class Uint16ShardWriter:
             written += chunk_size
             offset += chunk_size
 
-            if (
-                self.shard_tokens >= self.tokens_per_shard
-                or self.finished
-            ):
+            if self.shard_tokens >= self.tokens_per_shard or self.finished:
                 self._finalize_current_shard()
 
         return written
@@ -177,17 +160,17 @@ class Uint16ShardWriter:
         final_path = self._final_path(self.shard_index)
 
         if final_path.exists():
-            raise FileExistsError(
-                f"Zieldatei existiert bereits: {final_path}"
-            )
+            raise FileExistsError(f"Zieldatei existiert bereits: {final_path}")
 
         os.replace(self.current_path, final_path)
 
-        self.completed_shards.append({
-            "path": str(final_path),
-            "tokens": self.shard_tokens,
-            "bytes": final_path.stat().st_size,
-        })
+        self.completed_shards.append(
+            {
+                "path": str(final_path),
+                "tokens": self.shard_tokens,
+                "bytes": final_path.stat().st_size,
+            }
+        )
 
         self.shard_index += 1
         self.shard_tokens = 0
