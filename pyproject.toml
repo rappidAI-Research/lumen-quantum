@@ -48,9 +48,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://www.rappidai-research.com"
-Documentation = "https://github.com/jonascikemgil07-hue/lumen-quantum/tree/main/docs"
-Repository = "https://github.com/jonascikemgil07-hue/lumen-quantum"
-Issues = "https://github.com/jonascikemgil07-hue/lumen-quantum/issues"
+Documentation = "https://github.com/rappidAI-Research/lumen-quantum/tree/main/docs"
+Repository = "https://github.com/rappidAI-Research/lumen-quantum"
+Issues = "https://github.com/rappidAI-Research/lumen-quantum/issues"
 
 [tool.setuptools]
 packages = ["scripts"]
@@ -91,6 +91,24 @@ files = [
   "scripts/validate_repository_configs.py",
   "scripts/check_markdown_links.py",
   "scripts/check_secrets.py",
+  "scripts/check_canonical_urls.py",
+  "scripts/release_preflight.py",
+  "scripts/build_run_manifest.py",
+  "scripts/capture_environment.py",
+  "scripts/benchmark_cpu_inference.py",
+  "scripts/check_model_cards.py",
 ]
 strict = true
 warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = [
+  "torch.*",
+  "transformers.*",
+  "datasets.*",
+  "accelerate.*",
+  "sentencepiece.*",
+  "tokenizers.*",
+  "safetensors.*",
+]
+ignore_missing_imports = true
