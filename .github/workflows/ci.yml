@@ -52,14 +52,44 @@ jobs:
       - name: Repository health
         run: python scripts/repository_health.py
 
+      - name: Canonical repository URLs
+        run: python scripts/check_canonical_urls.py
+
       - name: Local Markdown links
         run: python scripts/check_markdown_links.py
 
       - name: High-confidence secret patterns
         run: python scripts/check_secrets.py
 
+      - name: Model-card consistency
+        run: python scripts/check_model_cards.py
+
+      - name: Provenance registry validation
+        run: python scripts/build_run_manifest.py --validate-provenance reports/provenance/historical-run-provenance-status.json
+
+      - name: Run-manifest schema validation
+        run: |
+          python scripts/build_run_manifest.py --config configs/smoke_5m.yaml --output "${RUNNER_TEMP:-/tmp}/run-manifest.json"
+          python scripts/build_run_manifest.py --validate "${RUNNER_TEMP:-/tmp}/run-manifest.json"
+
+      - name: Environment capture
+        run: python scripts/capture_environment.py --output "${RUNNER_TEMP:-/tmp}/environment.json"
+
+      - name: Release preflight (check mode)
+        run: python scripts/release_preflight.py --check
+
       - name: Lightweight CPU tests
-        run: python -m pytest tests/test_repository_health.py -m "unit and not slow and not gpu and not network"
+        run: >-
+          python -m pytest
+          tests/test_repository_health.py
+          tests/test_canonical_urls.py
+          tests/test_release_preflight.py
+          tests/test_run_manifest.py
+          tests/test_environment_capture.py
+          tests/test_cpu_benchmark.py
+          tests/test_model_cards.py
+          tests/test_examples.py
+          -m "unit and not slow and not gpu and not network"
 
   cpu-ml-tests:
     name: Fast CPU ML tests / Python 3.12

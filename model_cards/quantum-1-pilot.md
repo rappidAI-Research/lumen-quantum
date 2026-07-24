@@ -80,4 +80,4 @@ Cite the model repository and reviewed revision, artifact manifest/checksum, and
 code revision separately:
 
 - https://huggingface.co/rappidAI/quantum-1-pilot
-- https://github.com/jonascikemgil07-hue/lumen-quantum/tree/f7eda1fb0ae153f0f9cc3477ead997cbdb462b39
+- https://github.com/rappidAI-Research/lumen-quantum/tree/f7eda1fb0ae153f0f9cc3477ead997cbdb462b39

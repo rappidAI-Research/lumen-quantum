@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Private security report
-    url: https://github.com/jonascikemgil07-hue/lumen-quantum/security/advisories/new
+    url: https://github.com/rappidAI-Research/lumen-quantum/security/advisories/new
     about: Review SECURITY.md and report vulnerabilities privately.

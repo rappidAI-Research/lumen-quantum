@@ -42,13 +42,13 @@ Echelon Base and Echelon Chat are stages or variants inside
 `quantum-1-echelon`, not separate model families. See
 [`docs/model-lineage.md`](docs/model-lineage.md) and the canonical model cards.
 
-## Five-minute CPU-only quickstart
+## CPU-only quickstart
 
 Python 3.11 and 3.12 are supported. This lightweight path does not install
 PyTorch, access a dataset, download a model, or require a GPU.
 
 ```bash
-git clone https://github.com/jonascikemgil07-hue/lumen-quantum.git
+git clone https://github.com/rappidAI-Research/lumen-quantum.git
 cd lumen-quantum
 python -m venv .venv
 source .venv/bin/activate

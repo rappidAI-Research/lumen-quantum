@@ -1,7 +1,7 @@
 # OpenAI Codex for Open Source application draft
 
 Status: draft for maintainer review; not submitted.
-Primary repository: <https://github.com/jonascikemgil07-hue/lumen-quantum>
+Primary repository: <https://github.com/rappidAI-Research/lumen-quantum>
 Official application: <https://openai.com/form/codex-for-oss/>
 
 The application should use the technical repository above, not the separate
@@ -33,14 +33,17 @@ labels and count annotations are excluded. Every answer is below the official
 ## Public metrics record
 
 Values retrieved on 2026-07-22 from the public GitHub repository and maintainer
-profile:
+profile. This is a dated snapshot and is now stale (issues and Dependabot pull
+requests have since been opened). Recapture every value immediately before
+submission using [metrics-capture-template.md](metrics-capture-template.md); do
+not reuse this snapshot as a current fact.
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Repository visibility | Public | [GitHub repository](https://github.com/jonascikemgil07-hue/lumen-quantum) |
-| Stars | 1 | [GitHub repository](https://github.com/jonascikemgil07-hue/lumen-quantum) |
-| Forks | 0 | [GitHub repository](https://github.com/jonascikemgil07-hue/lumen-quantum) |
-| Open issues before this audit | 0 | [GitHub issues](https://github.com/jonascikemgil07-hue/lumen-quantum/issues) |
+| Repository visibility | Public | [GitHub repository](https://github.com/rappidAI-Research/lumen-quantum) |
+| Stars | 1 | [GitHub repository](https://github.com/rappidAI-Research/lumen-quantum) |
+| Forks | 0 | [GitHub repository](https://github.com/rappidAI-Research/lumen-quantum) |
+| Open issues before this audit | 0 | [GitHub issues](https://github.com/rappidAI-Research/lumen-quantum/issues) |
 | Public package downloads | None claimed; no package publication was found or performed | [Project README](../../README.md) |
 | Public profile followers | 0 | [GitHub profile](https://github.com/jonascikemgil07-hue) |
 | Public repositories | 5 | [GitHub profile](https://github.com/jonascikemgil07-hue?tab=repositories) |
@@ -55,7 +58,8 @@ the values and the date without improving or rounding them for presentation.
 - Do not imply that the website repository is the model-development core.
 - Do not claim company-team, foundation, steering-committee, contributor,
   benchmark, download, or adoption evidence that does not exist.
-- If the pull request is still open, describe readiness work as pending rather
-  than present on the default branch.
+- The readiness work is merged into `main`; describe it as present on the
+  default branch. Do not imply a tagged release, model publication, or completed
+  Echelon training, none of which exist.
 - If source licensing is not approved, disclose that clearly or wait before
   submission.
