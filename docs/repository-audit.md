@@ -1,13 +1,33 @@
 # Repository audit
 
 Audit date: 2026-07-22
-Repository: `jonascikemgil07-hue/lumen-quantum`
+Repository: `rappidAI-Research/lumen-quantum`
 Audited base revision: `f7eda1fb0ae153f0f9cc3477ead997cbdb462b39`
 Readiness branch: `chore/core-oss-readiness`
 
 This is the technical repository for rappidAI Quantum. The separate
 `rappidai-research.com` repository is the project website and research index;
 it is not the model-development core.
+
+## Post-merge status
+
+- Merge date: 2026-07-22 (readiness PR #1).
+- Merge commit: `7e9cb34` (`Merge pull request #1 from
+  rappidAI-Research/chore/core-oss-readiness`).
+- Canonical organization path: `rappidAI-Research/lumen-quantum`.
+- Subsequent dependency updates on `main` (`da79ca8`): Dependabot widened
+  `datasets` (<6), `mypy` (<3), `pytest` (<10), `ruff` (<0.17), and `setuptools`
+  (<84), plus a GitHub-Actions group bump. The default CPU-only checks pass under
+  the newest permitted `ruff`, `mypy`, and `pytest`.
+- The Apache-2.0 files, community docs, model cards, CPU-only CI, and health
+  checks are present on `main`, not on a draft branch.
+- Known remaining deficits: historical pilot dataset revisions are still
+  unrecorded; final run manifests and raw evaluation outputs are absent; no real
+  CPU inference measurement exists; Echelon production and training are
+  incomplete; source-license and artifact-license decisions are open.
+
+The audit findings below were the pre-merge snapshot and remain a historical
+record.
 
 ## Executive result
 
@@ -200,7 +220,7 @@ dataset download, GPU run, or Echelon production run was created.
 
 ## Remaining maintainer decisions
 
-- [ ] Confirm source/documentation ownership and approve Apache-2.0 before merge.
+- [ ] Confirm source/documentation ownership and approve Apache-2.0 for the source release (merging did not make this determination).
 - [ ] Confirm `NOTICE` names and years are accurate.
 - [ ] Choose and publish explicit pilot model-weight and tokenizer licenses.
 - [ ] Verify the exact immutable dataset revision used by each historical run.
@@ -210,5 +230,5 @@ dataset download, GPU run, or Echelon production run was created.
 - [ ] Review repository and profile wording before submitting the OpenAI
   Codex for Open Source application.
 
-Until those items are resolved, the readiness work should remain a draft pull
-request and no release should be tagged.
+The readiness work is merged. Until the human items above are resolved, no
+release should be tagged and no artifact should be described as open weight.

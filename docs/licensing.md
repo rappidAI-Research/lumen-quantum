@@ -3,10 +3,12 @@
 ## Source code and documentation
 
 Original repository source code, configurations, tests, and project
-documentation are prepared under Apache License 2.0. Git history attributes all
-tracked original material to the maintainer account, and the audit found no
-vendored copied source. Before merge, the maintainer must confirm that they own
-or can license every original tracked contribution.
+documentation are licensed under Apache License 2.0, which is now present on
+`main`. Git history attributes all tracked original material to the maintainer
+account, and the audit found no vendored copied source. The maintainer must
+still confirm that they own or can license every original tracked contribution;
+merging the license files did not, by itself, make that legal determination. See
+[maintainer-source-license-approval.md](maintainer-source-license-approval.md).
 
 ## Excluded material
 
@@ -24,7 +26,8 @@ record. Public download access is not a reuse license.
 
 ## Approval checklist
 
-Before merging the license files, the maintainer must confirm:
+The Apache-2.0 files are merged, but the ownership determination remains a human
+decision. The maintainer must confirm:
 
 1. they own or have permission to license all original tracked code and prose;
 2. no employer, client, collaborator, or contract holds conflicting rights;
