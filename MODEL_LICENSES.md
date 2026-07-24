@@ -6,6 +6,17 @@ terms are not published, the required statement is:
 
 > No explicit reuse license published. Do not describe as open weight.
 
+## Maintainer decision (2026-07-24)
+
+The maintainer has deliberately chosen to keep all pilot model weights, GGUF
+artifacts, and tokenizers under "all rights reserved" for now: **no reuse
+license is published**, and these artifacts **must not be described as open
+weight**. Redistribution, modification, and commercial use are not granted.
+
+This is a conscious, dated decision, not an oversight, and it is fully
+reversible: the maintainer may publish explicit terms later. Until then the
+per-artifact rows below stand.
+
 Fields per artifact: hosting repository, exact reviewed revision, rights holder,
 source-code license, weight license, tokenizer license, redistribution,
 modification, commercial use, publication status, verification status, and the
