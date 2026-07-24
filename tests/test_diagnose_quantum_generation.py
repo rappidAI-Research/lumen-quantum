@@ -75,7 +75,9 @@ def _config(tmp_path: Path) -> dict:
 
 
 def test_tokenizer_roundtrip_reports_stable_ids():
-    report = tokenizer_roundtrip_for_prompts(StableFakeTokenizer(), ["Berlin ist", "Nutzer: Hallo\nLumen:"])
+    report = tokenizer_roundtrip_for_prompts(
+        StableFakeTokenizer(), ["Berlin ist", "Nutzer: Hallo\nLumen:"]
+    )
 
     assert report["all_stable"] is True
     assert report["stable_count"] == 2
@@ -203,14 +205,18 @@ def test_android_capture_detects_wrong_loaded_model_hash(tmp_path):
         "raw_stream_fragments": ["Berlin", " ist"],
     }
 
-    validation = validate_android_capture_record(record, config, gguf_sha256="expected", gguf_size=123)
+    validation = validate_android_capture_record(
+        record, config, gguf_sha256="expected", gguf_size=123
+    )
 
     assert validation["issue_count"] == 1
     assert validation["issues"][0].startswith("gguf_sha256_mismatch")
 
 
 def test_minimal_report_json_can_be_written(tmp_path):
-    report_path = tmp_path / "data" / "diagnostics" / "quantum-1.6-pilot" / "pytorch_generation_report.json"
+    report_path = (
+        tmp_path / "data" / "diagnostics" / "quantum-1.6-pilot" / "pytorch_generation_report.json"
+    )
     report_path.parent.mkdir(parents=True)
     payload = {
         "model_name": "quantum-1.6-pilot",
@@ -220,7 +226,12 @@ def test_minimal_report_json_can_be_written(tmp_path):
                 prompt_index=0,
                 prompt="Ein Computer ist",
                 mode_name="controlled_sampling",
-                mode_config={"do_sample": True, "temperature": 0.7, "top_p": 0.9, "max_new_tokens": 64},
+                mode_config={
+                    "do_sample": True,
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "max_new_tokens": 64,
+                },
                 prompt_token_ids=[4, 5],
                 generation_input_ids=[1, 4, 5],
                 output_token_ids=[1, 4, 5, 6],

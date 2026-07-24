@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   model_name: "quantum-1.6-pilot"
   version: "v1.6.0"
   description: "Reproduzierbare Diagnose fuer schlechte Generationen von quantum-1.6-pilot."
@@ -10,7 +10,8 @@ paths:
   pytorch_checkpoint_dir: "models/quantum-1.6-pilot/final"
   tokenizer_dir: "tokenizer/quantum-1"
   gguf_file: "exports/quantum-1.6-pilot-v1.6.0-f16.gguf"
-  llama_cpp_dir: "tools/llama.cpp"
+  # Externen Checkout zur Laufzeit mit --llama-cpp-dir angeben.
+  llama_cpp_dir: null
   output_dir: "data/diagnostics/quantum-1.6-pilot"
   android_capture_file: "data/diagnostics/quantum-1.6-pilot/android_capture.jsonl"
 

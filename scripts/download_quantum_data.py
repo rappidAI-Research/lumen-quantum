@@ -10,12 +10,12 @@ import argparse
 import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import yaml
-
 
 LOGGER = logging.getLogger("lumen.download_quantum_data")
 
@@ -61,7 +61,7 @@ def first_optional_field(record: dict, field_names: list[str]) -> str | None:
 
 
 def stable_doc_id(dataset: str, subset: str, text: str, source_url: str | None) -> str:
-    payload = f"{dataset}\n{subset}\n{source_url or ''}\n{text}".encode("utf-8")
+    payload = f"{dataset}\n{subset}\n{source_url or ''}\n{text}".encode()
     return hashlib.sha256(payload).hexdigest()[:24]
 
 
@@ -173,7 +173,7 @@ def run(config_path: str | Path) -> Path:
     write_jsonl(records, output_file)
 
     metadata = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "source": config["source"],
         "seed": int(config["seed"]),
         "download": config["download"],

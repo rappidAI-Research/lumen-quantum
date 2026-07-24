@@ -5,12 +5,13 @@ import yaml
 
 from scripts.evaluate_quantum import default_evaluation_config, read_completion_prompts
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_final_train_config_contains_robust_evaluation_section():
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "quantum_1_final_train.yaml").read_text(encoding="utf-8"))
+    config = yaml.safe_load(
+        (PROJECT_ROOT / "configs" / "quantum_1_final_train.yaml").read_text(encoding="utf-8")
+    )
     evaluation = config["evaluation"]
 
     assert Path(evaluation["checkpoint_dir"]) == Path("models/quantum-1-base/final")
@@ -51,7 +52,9 @@ def test_completion_eval_file_is_jsonl_with_prompts():
 
 def test_read_completion_prompts_rejects_jsonl_without_prompt(tmp_path):
     eval_file = tmp_path / "bad.jsonl"
-    eval_file.write_text(json.dumps({"text": "kein Prompt"}, ensure_ascii=False) + "\n", encoding="utf-8")
+    eval_file.write_text(
+        json.dumps({"text": "kein Prompt"}, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
 
     try:
         read_completion_prompts(eval_file)

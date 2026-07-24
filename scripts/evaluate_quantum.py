@@ -6,9 +6,9 @@ import argparse
 import json
 import logging
 import math
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from torch.utils.data import DataLoader
@@ -18,22 +18,24 @@ try:
     from .generate import generate_text
     from .generate_quantum import load_quantum_model_from_checkpoint
     from .inspect_model_size import load_quantum_tokenizer_info, load_yaml_config
-    from .train_tokenizer import load_fast_tokenizer
     from .train_quantum_pilot import TokenizedTensorDataset
+    from .train_tokenizer import load_fast_tokenizer
 except ImportError:
     from evaluate import read_prompts
     from generate import generate_text
     from generate_quantum import load_quantum_model_from_checkpoint
     from inspect_model_size import load_quantum_tokenizer_info, load_yaml_config
-    from train_tokenizer import load_fast_tokenizer
     from train_quantum_pilot import TokenizedTensorDataset
+    from train_tokenizer import load_fast_tokenizer
 
 
 LOGGER = logging.getLogger("lumen.evaluate_quantum")
 
 
 def setup_logging() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
 
 
 def default_evaluation_config(config: dict) -> dict:
@@ -42,7 +44,9 @@ def default_evaluation_config(config: dict) -> dict:
     tokenized_dir = Path(data_config.get("tokenized_dir", "data/quantum/final/tokenized"))
     output_dir = Path("data/evals/results/quantum-1-base")
     defaults = {
-        "checkpoint_dir": str(Path(training_config.get("output_dir", "models/quantum-1-base")) / "final"),
+        "checkpoint_dir": str(
+            Path(training_config.get("output_dir", "models/quantum-1-base")) / "final"
+        ),
         "tokenizer_dir": config.get("tokenizer", {}).get("dir", "tokenizer/quantum-1"),
         "validation_file": str(data_config.get("validation_file", tokenized_dir / "validation.pt")),
         "eval_file": "data/evals/quantum_1_base_v1.jsonl",
@@ -76,7 +80,9 @@ def read_completion_prompts(eval_file: str | Path) -> list[dict]:
                     raise ValueError(f"Ungueltiges JSONL in {path}:{line_number}") from exc
                 prompt = record.get("prompt")
                 if not isinstance(prompt, str) or not prompt.strip():
-                    raise ValueError(f"Eval-Datensatz {path}:{line_number} enthaelt kein nicht-leeres Feld 'prompt'.")
+                    raise ValueError(
+                        f"Eval-Datensatz {path}:{line_number} enthaelt kein nicht-leeres Feld 'prompt'."
+                    )
                 prompts.append(
                     {
                         "id": record.get("id", f"prompt-{line_number:03d}"),
@@ -101,7 +107,9 @@ def evaluate_validation_loss(
     context_length: int,
     max_batches: int | None = None,
 ) -> dict:
-    dataset = TokenizedTensorDataset(validation_file, int(model.config.vocab_size), int(context_length))
+    dataset = TokenizedTensorDataset(
+        validation_file, int(model.config.vocab_size), int(context_length)
+    )
     loader = DataLoader(dataset, batch_size=int(batch_size), shuffle=False)
     device = next(model.parameters()).device
     total_loss = 0.0
@@ -152,10 +160,15 @@ def run_quantum_evaluation(
     if (checkpoint_path / "tokenizer" / "tokenizer.model").exists():
         tokenizer_dir = checkpoint_path / "tokenizer"
     else:
-        tokenizer_dir = Path(evaluation_config.get("tokenizer_dir") or load_quantum_tokenizer_info(config).tokenizer_dir)
+        tokenizer_dir = Path(
+            evaluation_config.get("tokenizer_dir")
+            or load_quantum_tokenizer_info(config).tokenizer_dir
+        )
 
     model = load_quantum_model_from_checkpoint(checkpoint_path, device)
-    context_length = int(config.get("data", {}).get("block_size") or model.config.max_position_embeddings)
+    context_length = int(
+        config.get("data", {}).get("block_size") or model.config.max_position_embeddings
+    )
     validation_report = evaluate_validation_loss(
         model=model,
         validation_file=validation_file,
@@ -185,7 +198,7 @@ def run_quantum_evaluation(
                             "index": index,
                             "id": prompt_record["id"],
                             "category": prompt_record["category"],
-                            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                            "created_at_utc": datetime.now(UTC).isoformat(),
                             "checkpoint": str(checkpoint_path),
                             "prompt": prompt_record["prompt"],
                             "generated_text": generated,
@@ -200,7 +213,7 @@ def run_quantum_evaluation(
                 generation_count += 1
 
     summary = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config": str(config_path),
         "checkpoint": str(checkpoint_path),
         "tokenizer_dir": str(tokenizer_dir),
@@ -225,7 +238,9 @@ def run_quantum_evaluation(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fuehrt eine einfache quantum-1-base Evaluation aus.")
+    parser = argparse.ArgumentParser(
+        description="Fuehrt eine einfache quantum-1-base Evaluation aus."
+    )
     parser.add_argument("--config", default="configs/quantum_1_base_pilot.yaml")
     parser.add_argument("--checkpoint")
     parser.add_argument("--eval-file")
@@ -237,7 +252,9 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
 def main(argv: Iterable[str] | None = None) -> None:
     setup_logging()
     args = parse_args(argv)
-    run_quantum_evaluation(args.config, args.checkpoint, args.eval_file, args.output_file, args.device)
+    run_quantum_evaluation(
+        args.config, args.checkpoint, args.eval_file, args.output_file, args.device
+    )
 
 
 if __name__ == "__main__":

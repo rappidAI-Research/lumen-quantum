@@ -4,25 +4,23 @@ import hashlib
 import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import sentencepiece as spm
 import yaml
 from datasets import load_dataset
-
 from echelon_quality_filters import (
+    SimHashIndex,
     alpha_ratio,
     boilerplate_match_count,
     duplicate_line_ratio,
     metadata_rejection,
     repeated_ngram_ratio,
     simhash64,
-    SimHashIndex,
     words,
 )
-
 
 CONFIG_PATH = Path("configs/echelon/garden_smoke.yaml")
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -56,10 +54,7 @@ def quality_rejection(text: str, config: dict) -> str | None:
     if length > filters["maximum_characters"]:
         return "too_long"
 
-    url_characters = sum(
-        len(match.group(0))
-        for match in URL_PATTERN.finditer(text)
-    )
+    url_characters = sum(len(match.group(0)) for match in URL_PATTERN.finditer(text))
     if ratio(url_characters, length) > filters["maximum_url_ratio"]:
         return "url_ratio"
 
@@ -67,10 +62,7 @@ def quality_rejection(text: str, config: dict) -> str | None:
     if ratio(digit_count, length) > filters["maximum_digit_ratio"]:
         return "digit_ratio"
 
-    symbol_count = sum(
-        not character.isalnum() and not character.isspace()
-        for character in text
-    )
+    symbol_count = sum(not character.isalnum() and not character.isspace() for character in text)
     if ratio(symbol_count, length) > filters["maximum_symbol_ratio"]:
         return "symbol_ratio"
 
@@ -80,22 +72,13 @@ def quality_rejection(text: str, config: dict) -> str | None:
     if alpha_ratio(text) < filters["minimum_alpha_ratio"]:
         return "alpha_ratio"
 
-    if (
-        duplicate_line_ratio(text)
-        > filters["maximum_duplicate_line_ratio"]
-    ):
+    if duplicate_line_ratio(text) > filters["maximum_duplicate_line_ratio"]:
         return "duplicate_lines"
 
-    if (
-        repeated_ngram_ratio(text, n=5)
-        > filters["maximum_repeated_5gram_ratio"]
-    ):
+    if repeated_ngram_ratio(text, n=5) > filters["maximum_repeated_5gram_ratio"]:
         return "repeated_5grams"
 
-    if (
-        boilerplate_match_count(text)
-        > filters["maximum_boilerplate_matches"]
-    ):
+    if boilerplate_match_count(text) > filters["maximum_boilerplate_matches"]:
         return "boilerplate"
 
     return None
@@ -143,9 +126,7 @@ def main() -> None:
     tokenized_dir.mkdir(parents=True, exist_ok=True)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
-    tokenizer = spm.SentencePieceProcessor(
-        model_file=config["tokenizer"]["model"]
-    )
+    tokenizer = spm.SentencePieceProcessor(model_file=config["tokenizer"]["model"])
 
     if tokenizer.get_piece_size() > 65536:
         raise ValueError("Vokabular ist zu groß für uint16.")
@@ -161,23 +142,11 @@ def main() -> None:
     )
 
     splits = ("train", "validation", "test")
-    text_paths = {
-        split: cleaned_dir / f"{split}.jsonl"
-        for split in splits
-    }
-    token_paths = {
-        split: tokenized_dir / f"{split}.bin"
-        for split in splits
-    }
+    text_paths = {split: cleaned_dir / f"{split}.jsonl" for split in splits}
+    token_paths = {split: tokenized_dir / f"{split}.bin" for split in splits}
 
-    text_handles = {
-        split: text_paths[split].open("w", encoding="utf-8")
-        for split in splits
-    }
-    token_handles = {
-        split: token_paths[split].open("wb")
-        for split in splits
-    }
+    text_handles = {split: text_paths[split].open("w", encoding="utf-8") for split in splits}
+    token_handles = {split: token_paths[split].open("wb") for split in splits}
 
     counters = Counter()
     documents_per_split = Counter()
@@ -188,19 +157,14 @@ def main() -> None:
     near_duplicate_index = SimHashIndex(
         bits=near_config["simhash_bits"],
         bands=near_config["bands"],
-        maximum_hamming_distance=near_config[
-            "maximum_hamming_distance"
-        ],
+        maximum_hamming_distance=near_config["maximum_hamming_distance"],
     )
 
     try:
         for sample in dataset:
             counters["documents_seen"] += 1
 
-            if (
-                counters["documents_seen"]
-                > config["source"]["maximum_documents_seen"]
-            ):
+            if counters["documents_seen"] > config["source"]["maximum_documents_seen"]:
                 break
 
             metadata_reason = metadata_rejection(sample, config)
@@ -224,12 +188,7 @@ def main() -> None:
 
             similarity_hash = simhash64(text)
 
-            if (
-                near_config["enabled"]
-                and near_duplicate_index.is_near_duplicate(
-                    similarity_hash
-                )
-            ):
+            if near_config["enabled"] and near_duplicate_index.is_near_duplicate(similarity_hash):
                 counters["rejected_near_duplicate"] += 1
                 continue
 
@@ -244,9 +203,7 @@ def main() -> None:
                 "fingerprint": fingerprint,
                 "text": text,
             }
-            text_handles[split].write(
-                json.dumps(record, ensure_ascii=False) + "\n"
-            )
+            text_handles[split].write(json.dumps(record, ensure_ascii=False) + "\n")
 
             token_ids = tokenizer.encode(
                 text,
@@ -255,9 +212,7 @@ def main() -> None:
                 add_eos=True,
             )
 
-            np.asarray(token_ids, dtype=np.uint16).tofile(
-                token_handles[split]
-            )
+            np.asarray(token_ids, dtype=np.uint16).tofile(token_handles[split])
 
             documents_per_split[split] += 1
             tokens_per_split[split] += len(token_ids)
@@ -280,17 +235,11 @@ def main() -> None:
 
     manifest = {
         "pipeline": "quantum-1-echelon-garden-smoke",
-        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "created_utc": datetime.now(UTC).isoformat(),
         "config": config,
         "counters": dict(counters),
-        "documents_per_split": {
-            split: documents_per_split[split]
-            for split in splits
-        },
-        "tokens_per_split": {
-            split: tokens_per_split[split]
-            for split in splits
-        },
+        "documents_per_split": {split: documents_per_split[split] for split in splits},
+        "tokens_per_split": {split: tokens_per_split[split] for split in splits},
         "total_tokens": sum(tokens_per_split.values()),
         "unique_fingerprints": len(seen_fingerprints),
         "near_duplicate_index_size": len(near_duplicate_index),

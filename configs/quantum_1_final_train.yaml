@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   model_name: "quantum-1-base"
   run_name: "quantum-1-base-final-v1-prep"
   description: "Finale Trainingsvorbereitung fuer quantum-1-base; startet standardmaessig kein Training."

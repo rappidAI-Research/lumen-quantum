@@ -14,22 +14,27 @@ import math
 import random
 import shutil
 import time
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 import yaml
 from accelerate import Accelerator
 from torch.utils.data import DataLoader, Dataset
-from transformers import LlamaConfig, LlamaForCausalLM, get_cosine_schedule_with_warmup, get_linear_schedule_with_warmup
+from transformers import (
+    LlamaConfig,
+    LlamaForCausalLM,
+    get_cosine_schedule_with_warmup,
+    get_linear_schedule_with_warmup,
+)
 
 try:
-    from .train_tokenizer import load_fast_tokenizer
     from .generate import load_model_state_dict
+    from .train_tokenizer import load_fast_tokenizer
 except ImportError:
-    from train_tokenizer import load_fast_tokenizer
     from generate import load_model_state_dict
+    from train_tokenizer import load_fast_tokenizer
 
 
 LOGGER = logging.getLogger("lumen.train_smoke")
@@ -127,7 +132,9 @@ def build_llama_config(
     model_config = config["model"]
     data_config = config.get("data", {})
     resolved_vocab_size = int(vocab_size or model_config["vocab_size"])
-    max_positions = int(model_config.get("max_position_embeddings", data_config.get("block_size", 256)))
+    max_positions = int(
+        model_config.get("max_position_embeddings", data_config.get("block_size", 256))
+    )
 
     return LlamaConfig(
         vocab_size=resolved_vocab_size,
@@ -205,7 +212,11 @@ def latest_checkpoint(output_dir: str | Path) -> Path | None:
     if not checkpoint_root.exists():
         return None
     checkpoints = sorted(
-        (path for path in checkpoint_root.glob(f"{CHECKPOINT_PREFIX}*") if checkpoint_is_complete(path)),
+        (
+            path
+            for path in checkpoint_root.glob(f"{CHECKPOINT_PREFIX}*")
+            if checkpoint_is_complete(path)
+        ),
         key=checkpoint_step,
     )
     return checkpoints[-1] if checkpoints else None
@@ -230,7 +241,9 @@ def resolve_resume_checkpoint(output_dir: str | Path, resume_value: str | None) 
     return checkpoint
 
 
-def remove_path_with_retries(path: str | Path, attempts: int = 5, delay_seconds: float = 0.2) -> None:
+def remove_path_with_retries(
+    path: str | Path, attempts: int = 5, delay_seconds: float = 0.2
+) -> None:
     target = Path(path)
     if not target.exists():
         return
@@ -248,7 +261,9 @@ def remove_path_with_retries(path: str | Path, attempts: int = 5, delay_seconds:
             if attempt < attempts - 1:
                 time.sleep(delay_seconds)
 
-    raise PermissionError(f"Konnte {target} nach {attempts} Versuchen nicht entfernen: {last_error}")
+    raise PermissionError(
+        f"Konnte {target} nach {attempts} Versuchen nicht entfernen: {last_error}"
+    )
 
 
 def finalize_checkpoint_dir(temp_dir: str | Path, checkpoint_dir: str | Path) -> None:
@@ -301,7 +316,7 @@ def save_checkpoint(
         "global_step": global_step,
         "epoch": epoch,
         "rng_state": get_rng_state(),
-        "saved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "saved_at_utc": datetime.now(UTC).isoformat(),
         "config": config,
     }
     accelerator.save(training_state, temp_dir / "training_state.pt")
@@ -336,7 +351,7 @@ def save_final_model(
     copy_tokenizer(tokenizer_dir, final_dir / "tokenizer")
     copy_tokenizer_files_to_model_root(tokenizer_dir, final_dir)
     metadata = {
-        "saved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "saved_at_utc": datetime.now(UTC).isoformat(),
         "global_step": global_step,
         "note": "Lokaler Smoke-Checkpoint; keine vortrainierten Gewichte wurden geladen.",
         "config": config,
@@ -390,18 +405,24 @@ def evaluate_loss(model, dataloader: DataLoader, accelerator: Accelerator) -> fl
     return float(torch.cat(losses).mean().item())
 
 
-def train(config_path: str | Path, resume_from: str | None = None, max_steps_override: int | None = None) -> Path:
+def train(
+    config_path: str | Path, resume_from: str | None = None, max_steps_override: int | None = None
+) -> Path:
     config = load_yaml_config(config_path)
     training_config = config["training"]
     output_dir = Path(training_config["output_dir"])
     setup_logging(output_dir)
     set_reproducible_seed(int(config["seed"]))
 
-    tokenizer = load_fast_tokenizer(training_config["tokenizer_dir"], config["tokenizer"].get("special_tokens"))
+    tokenizer = load_fast_tokenizer(
+        training_config["tokenizer_dir"], config["tokenizer"].get("special_tokens")
+    )
     tokenized_metadata = load_tokenized_metadata(training_config["data_dir"])
     block_size = int(tokenized_metadata["block_size"])
     if block_size > int(config["model"]["max_position_embeddings"]):
-        raise ValueError("block_size ist groesser als max_position_embeddings in der Modell-Config.")
+        raise ValueError(
+            "block_size ist groesser als max_position_embeddings in der Modell-Config."
+        )
 
     llama_config = build_llama_config(
         config,
@@ -412,10 +433,16 @@ def train(config_path: str | Path, resume_from: str | None = None, max_steps_ove
     )
     model = build_model(llama_config)
     parameter_count = count_parameters(model)
-    LOGGER.info("Modell initialisiert mit zufaelligen Gewichten: %s Parameter.", f"{parameter_count:,}")
+    LOGGER.info(
+        "Modell initialisiert mit zufaelligen Gewichten: %s Parameter.", f"{parameter_count:,}"
+    )
 
-    train_dataset = TokenBlockDataset(Path(training_config["data_dir"]) / "train.pt", tokenizer.pad_token_id)
-    validation_dataset = TokenBlockDataset(Path(training_config["data_dir"]) / "validation.pt", tokenizer.pad_token_id)
+    train_dataset = TokenBlockDataset(
+        Path(training_config["data_dir"]) / "train.pt", tokenizer.pad_token_id
+    )
+    validation_dataset = TokenBlockDataset(
+        Path(training_config["data_dir"]) / "validation.pt", tokenizer.pad_token_id
+    )
     if len(train_dataset) == 0:
         raise ValueError("Trainingsdataset ist leer.")
 
@@ -445,7 +472,9 @@ def train(config_path: str | Path, resume_from: str | None = None, max_steps_ove
         mixed_precision=str(training_config.get("mixed_precision", "no")),
     )
 
-    resume_value = resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    resume_value = (
+        resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    )
     checkpoint_path = resolve_resume_checkpoint(output_dir, resume_value)
     start_step = 0
     start_epoch = 0
@@ -556,12 +585,16 @@ def train(config_path: str | Path, resume_from: str | None = None, max_steps_ove
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Trainiert das Lumen-Smoke-Modell.")
-    parser.add_argument("--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration.")
+    parser.add_argument(
+        "--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration."
+    )
     parser.add_argument(
         "--resume-from",
         help="Checkpoint-Ordner, training_state.pt oder 'auto'. Ueberschreibt training.resume_from_checkpoint.",
     )
-    parser.add_argument("--max-steps", type=int, help="Maximale Trainingsschritte fuer schnelle Tests.")
+    parser.add_argument(
+        "--max-steps", type=int, help="Maximale Trainingsschritte fuer schnelle Tests."
+    )
     return parser.parse_args(argv)
 
 

@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "Please cite the exact repository commit and any model or dataset artifacts separately."
+title: "rappidAI Quantum"
+type: software
+authors:
+  - family-names: Cikemgil
+    given-names: "Jonas Désiré"
+repository-code: "https://github.com/jonascikemgil07-hue/lumen-quantum"
+url: "https://www.rappidai-research.com"
+license: Apache-2.0
+version: "0.1.0-alpha (unreleased)"
+keywords:
+  - compact language models
+  - reproducible machine learning
+  - tokenizers
+  - GGUF

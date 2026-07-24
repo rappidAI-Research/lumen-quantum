@@ -1,4 +1,4 @@
-"""Trainiert den lokalen SentencePiece-BPE-Tokenizer fuer Lumen Quantum.
+"""Train the local SentencePiece BPE tokenizer for rappidAI Quantum.
 
 Dieses Skript nutzt nur lokale Textdateien aus data/raw und speichert einen
 LLaMA-/llama.cpp-kompatiblen Tokenizer unter tokenizer/smoke. Es werden keine
@@ -11,9 +11,9 @@ import argparse
 import json
 import logging
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -82,7 +82,9 @@ class SentencePieceLlamaTokenizer:
     def convert_tokens_to_ids(self, token: str) -> int:
         return int(self.sp_model.piece_to_id(token))
 
-    def __call__(self, text: str, return_tensors: str | None = None, add_special_tokens: bool = False):
+    def __call__(
+        self, text: str, return_tensors: str | None = None, add_special_tokens: bool = False
+    ):
         ids = self.encode(text, add_special_tokens=add_special_tokens)
         if return_tensors == "pt":
             import torch
@@ -245,7 +247,7 @@ def train_tokenizer(
     )
 
     metadata = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "seed": seed,
         "input_dir": str(Path(input_dir)),
         "input_files": [str(path) for path in files],
@@ -273,13 +275,23 @@ def train_tokenizer(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trainiert den Lumen-Smoke-SentencePiece-BPE-Tokenizer.")
-    parser.add_argument("--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration.")
+    parser = argparse.ArgumentParser(
+        description="Trainiert den Lumen-Smoke-SentencePiece-BPE-Tokenizer."
+    )
+    parser.add_argument(
+        "--config", default="configs/smoke_5m.yaml", help="Pfad zur YAML-Konfiguration."
+    )
     parser.add_argument("--input-dir", help="Ordner mit .txt-Rohdaten. Ueberschreibt die Config.")
-    parser.add_argument("--output-dir", help="Zielordner fuer den Tokenizer. Ueberschreibt die Config.")
-    parser.add_argument("--vocab-size", type=int, help="BPE-Vokabulargroesse. Ueberschreibt die Config.")
+    parser.add_argument(
+        "--output-dir", help="Zielordner fuer den Tokenizer. Ueberschreibt die Config."
+    )
+    parser.add_argument(
+        "--vocab-size", type=int, help="BPE-Vokabulargroesse. Ueberschreibt die Config."
+    )
     parser.add_argument("--min-frequency", type=int, help="Mindesthaeufigkeit fuer BPE-Merges.")
-    parser.add_argument("--seed", type=int, help="Seed fuer reproduzierbare Dateireihenfolge/Einstellungen.")
+    parser.add_argument(
+        "--seed", type=int, help="Seed fuer reproduzierbare Dateireihenfolge/Einstellungen."
+    )
     parser.add_argument(
         "--byte-fallback",
         action="store_true",

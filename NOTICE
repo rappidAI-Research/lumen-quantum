@@ -1,0 +1,10 @@
+rappidAI Quantum
+Copyright 2026 Jonas Désiré Cikemgil
+
+This product includes software developed for the rappidAI Quantum project.
+
+Apache License 2.0 applies only to original source code, configuration, tests,
+and documentation in this repository. It does not grant rights to model
+weights, tokenizers, datasets, generated reports containing third-party data,
+third-party tools, or rappidAI names and marks except where a separate notice
+explicitly says otherwise. See docs/licensing.md and THIRD_PARTY_NOTICES.md.

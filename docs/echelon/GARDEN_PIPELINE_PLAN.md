@@ -1,4 +1,7 @@
-# quantum-1-echelon Garden-Pipeline
+# rappidAI Quantum — quantum-1-echelon Garden pipeline
+
+> Current strategic-line planning document. Production-data preparation and
+> Echelon training remain incomplete unless a signed run manifest says otherwise.
 
 ## Ziel
 Reproduzierbare Vorbereitung hochwertiger Trainingsdaten für

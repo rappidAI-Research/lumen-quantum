@@ -1,0 +1,35 @@
+name: Research or reproducibility task
+description: Propose a falsifiable, scoped research or reproducibility improvement.
+title: "[Research]: "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question and hypothesis
+      description: Separate established facts from the proposed outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: Method and acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Data, model, tokenizer, and license provenance
+    validations:
+      required: true
+  - type: textarea
+    id: resources
+    attributes:
+      label: Compute, network, storage, and lower-cost fallback
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security, privacy, misuse, bias, and licensing risks
+    validations:
+      required: true

@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   dataset_name: "quantum-1-pilot-tokenized"
   description: "Tokenisierte Pilotdaten fuer den spaeteren Cloud-Pilot von quantum-1-base."
 

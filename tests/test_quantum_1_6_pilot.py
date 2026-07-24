@@ -27,13 +27,13 @@ from scripts.quantum_1_6_preflight import (
     validate_train_config,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_CONFIG = PROJECT_ROOT / "configs" / "quantum_1_6_pilot_train.yaml"
 DATA_CONFIG = PROJECT_ROOT / "configs" / "quantum_1_6_pilot_data.yaml"
 
 
 # --- Konfigurationsvalidierung -------------------------------------------------
+
 
 def test_train_config_is_valid():
     config = load_yaml_config(TRAIN_CONFIG)
@@ -55,7 +55,9 @@ def test_learning_rate_is_conservative():
 def test_step_count_matches_token_budget():
     config = load_yaml_config(TRAIN_CONFIG)
     block = config["data"]["block_size"]
-    eff_tokens = config["training"]["batch_size"] * config["training"]["gradient_accumulation_steps"] * block
+    eff_tokens = (
+        config["training"]["batch_size"] * config["training"]["gradient_accumulation_steps"] * block
+    )
     assert eff_tokens == 16384
     # 500 Mio. Tokens / 16.384 ~= 30.518 Schritte.
     assert config["training"]["max_steps"] == 30518
@@ -77,6 +79,7 @@ def test_missing_init_section_is_rejected():
 
 
 # --- Output-Isolation ----------------------------------------------------------
+
 
 def test_output_dir_must_be_under_quantum_1_6():
     config = load_yaml_config(TRAIN_CONFIG)
@@ -100,11 +103,17 @@ def test_new_data_paths_do_not_overwrite_previous_dataset():
 
 # --- Tokenizer-Kompatibilitaet -------------------------------------------------
 
+
 def _require_tokenizer_files(config: dict) -> None:
     frozen = Path(config["tokenizer"]["dir"]) / "tokenizer.model"
-    base = Path(config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"])) / "tokenizer.model"
+    base = (
+        Path(config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"]))
+        / "tokenizer.model"
+    )
     if not frozen.exists() or not base.exists():
-        pytest.skip(f"Tokenizer-Dateien lokal nicht vorhanden ({frozen} / {base}); Pruefung laeuft auf RunPod.")
+        pytest.skip(
+            f"Tokenizer-Dateien lokal nicht vorhanden ({frozen} / {base}); Pruefung laeuft auf RunPod."
+        )
 
 
 def test_config_points_to_correct_tokenizer():
@@ -123,8 +132,14 @@ def test_wrong_pilot_tokenizer_is_rejected():
 
 
 def test_expected_and_incompatible_hashes_are_pinned():
-    assert EXPECTED_TOKENIZER_SHA256 == "be99b72377f3cb2ce1c875103d0324a2001ee5543a49e7c8fabfc1e384b1b6f6"
-    assert INCOMPATIBLE_TOKENIZER_SHA256 == "33017b41667f3ac30a60ee383f9018494b4c2c382ab2e83c7d0d219cd7c4c140"
+    assert (
+        EXPECTED_TOKENIZER_SHA256
+        == "be99b72377f3cb2ce1c875103d0324a2001ee5543a49e7c8fabfc1e384b1b6f6"
+    )
+    assert (
+        INCOMPATIBLE_TOKENIZER_SHA256
+        == "33017b41667f3ac30a60ee383f9018494b4c2c382ab2e83c7d0d219cd7c4c140"
+    )
     assert EXPECTED_TOKENIZER_SHA256 != INCOMPATIBLE_TOKENIZER_SHA256
 
 
@@ -151,6 +166,7 @@ def test_full_preflight_passes_on_repo():
 
 # --- Overlap-Vermeidung --------------------------------------------------------
 
+
 def test_record_fingerprints_uses_configured_fields():
     record = {"sha256": "abc", "id": "doc1", "text": "..."}
     fps = record_fingerprints(record, ["sha256", "id"])
@@ -164,8 +180,8 @@ def test_filter_removes_overlapping_documents():
         exclusion |= record_fingerprints(doc, ["sha256", "id"])
 
     new_docs = [
-        {"sha256": "h1", "id": "a", "text": "duplikat"},   # exakte Ueberschneidung
-        {"sha256": "h3", "id": "c", "text": "neu"},         # neu
+        {"sha256": "h1", "id": "a", "text": "duplikat"},  # exakte Ueberschneidung
+        {"sha256": "h3", "id": "c", "text": "neu"},  # neu
         {"sha256": "hX", "id": "b", "text": "gleiche id"},  # gleiche id -> Ueberschneidung
     ]
     kept, removed = filter_new_documents(new_docs, exclusion, ["sha256", "id"])
@@ -189,6 +205,7 @@ def test_build_exclusion_fingerprints_reads_multiple_files(tmp_path):
 
 
 # --- torch-abhaengige Tests (laufen auf der GPU-Instanz) -----------------------
+
 
 def test_weights_only_initialization_loads_base_weights():
     pytest.importorskip("torch")

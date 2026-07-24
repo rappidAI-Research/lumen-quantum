@@ -6,9 +6,9 @@ import argparse
 import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -41,8 +41,10 @@ def validate_ratios(train_ratio: float, validation_ratio: float, test_ratio: flo
         raise ValueError("Alle Split-Ratios muessen groesser als 0 sein.")
 
 
-def split_for_hash(document_hash: str, seed: int, train_ratio: float, validation_ratio: float) -> str:
-    digest = hashlib.sha256(f"{seed}:{document_hash}".encode("utf-8")).hexdigest()
+def split_for_hash(
+    document_hash: str, seed: int, train_ratio: float, validation_ratio: float
+) -> str:
+    digest = hashlib.sha256(f"{seed}:{document_hash}".encode()).hexdigest()
     bucket = int(digest[:12], 16) / float(16**12)
     if bucket < train_ratio:
         return "train"
@@ -90,7 +92,9 @@ def split_stats(splits: dict[str, list[dict]]) -> dict:
     for split_name, records in splits.items():
         stats[split_name] = {
             "documents": len(records),
-            "chars": sum(int(record.get("char_count", len(record.get("text", "")))) for record in records),
+            "chars": sum(
+                int(record.get("char_count", len(record.get("text", "")))) for record in records
+            ),
             "words": sum(int(record.get("word_count", 0)) for record in records),
             "approx_tokens": sum(int(record.get("approx_token_count", 0)) for record in records),
         }
@@ -101,7 +105,9 @@ def run(config_path: str | Path) -> dict[str, Path]:
     config = load_config(config_path)
     cleaned_file = Path(config["paths"]["cleaned_dir"]) / "documents_cleaned.jsonl"
     if not cleaned_file.exists():
-        raise FileNotFoundError(f"Bereinigte Daten fehlen: {cleaned_file}. Fuehre clean_quantum_data.py aus.")
+        raise FileNotFoundError(
+            f"Bereinigte Daten fehlen: {cleaned_file}. Fuehre clean_quantum_data.py aus."
+        )
 
     records = read_jsonl(cleaned_file)
     splits = split_records(records, config["sampling"])
@@ -115,7 +121,7 @@ def run(config_path: str | Path) -> dict[str, Path]:
         output_paths[split_name] = output_path
 
     metadata = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "input_file": str(cleaned_file),
         "sampling": config["sampling"],
         "stats": split_stats(splits),

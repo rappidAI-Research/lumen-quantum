@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
@@ -24,10 +24,14 @@ LOGGER = logging.getLogger("lumen.generate_quantum")
 
 
 def setup_logging() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
 
 
-def load_quantum_model_from_checkpoint(checkpoint_dir: str | Path, device: str | None = None) -> LlamaForCausalLM:
+def load_quantum_model_from_checkpoint(
+    checkpoint_dir: str | Path, device: str | None = None
+) -> LlamaForCausalLM:
     checkpoint = Path(checkpoint_dir)
     if not checkpoint.exists():
         raise FileNotFoundError(f"Checkpoint nicht gefunden: {checkpoint}")
@@ -67,7 +71,9 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generiert Text mit quantum-1-base.")
     parser.add_argument("--config", default="configs/quantum_1_base_pilot.yaml")
     parser.add_argument("--checkpoint", help="Lokaler Checkpoint-Ordner. Default aus Config.")
-    parser.add_argument("--tokenizer-dir", help="Lokaler Tokenizer-Ordner. Default aus Config oder Checkpoint.")
+    parser.add_argument(
+        "--tokenizer-dir", help="Lokaler Tokenizer-Ordner. Default aus Config oder Checkpoint."
+    )
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--max-new-tokens", type=int)
     parser.add_argument("--temperature", type=float)

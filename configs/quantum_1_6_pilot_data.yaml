@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   dataset_name: "quantum-1.6-pilot-deu-v1"
   description: "Neue deutsche FineWeb2-HQ-Datenbasis (~500 Mio. Train-Tokens) fuer das Continued Pretraining von quantum-1.6-pilot. Ueberschneidungen mit dem bisherigen quantum-1-pilot-Datensatz werden aktiv vermieden."
 

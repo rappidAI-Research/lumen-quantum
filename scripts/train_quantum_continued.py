@@ -17,9 +17,9 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import torch
 from accelerate import Accelerator
@@ -27,9 +27,12 @@ from accelerate import Accelerator
 try:
     import sentencepiece as spm
 except ImportError as exc:  # pragma: no cover - depends on local environment.
-    raise ImportError("sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt") from exc
+    raise ImportError(
+        "sentencepiece ist erforderlich. Installiere: pip install -r requirements.txt"
+    ) from exc
 
 try:
+    from .generate_quantum import load_quantum_weights
     from .inspect_model_size import (
         build_quantum_llama_config,
         build_quantum_model,
@@ -38,7 +41,6 @@ try:
         load_yaml_config,
         set_reproducible_seed,
     )
-    from .generate_quantum import load_quantum_weights
     from .quantum_1_6_preflight import EXPECTED_PARAMETER_COUNT, PreflightError, run_preflight
     from .train_quantum_pilot import (
         build_datasets,
@@ -55,6 +57,7 @@ try:
         setup_logging,
     )
 except ImportError:
+    from generate_quantum import load_quantum_weights
     from inspect_model_size import (
         build_quantum_llama_config,
         build_quantum_model,
@@ -63,7 +66,6 @@ except ImportError:
         load_yaml_config,
         set_reproducible_seed,
     )
-    from generate_quantum import load_quantum_weights
     from quantum_1_6_preflight import EXPECTED_PARAMETER_COUNT, PreflightError, run_preflight
     from train_quantum_pilot import (
         build_datasets,
@@ -81,7 +83,6 @@ except ImportError:
     )
 
 from torch.utils.data import DataLoader
-
 
 LOGGER = logging.getLogger("lumen.train_quantum_continued")
 
@@ -111,7 +112,9 @@ def initialize_from_base_weights(model: torch.nn.Module, base_model_dir: str | P
         raise FileNotFoundError(f"Basismodell fuer die Initialisierung nicht gefunden: {base_dir}")
 
     fingerprint_before = weight_fingerprint(model)
-    load_quantum_weights(model, base_dir)  # laedt Gewichte, prueft Architektur, kein from_pretrained
+    load_quantum_weights(
+        model, base_dir
+    )  # laedt Gewichte, prueft Architektur, kein from_pretrained
     fingerprint_after = weight_fingerprint(model)
 
     if fingerprint_before == fingerprint_after:
@@ -172,12 +175,12 @@ def log_sample_generations(
                 pad_token_id=pad_token_id,
                 eos_token_id=eos_token_id,
             )
-            new_tokens = output[0].tolist()[len(ids):]
+            new_tokens = output[0].tolist()[len(ids) :]
             completion = sp.decode(new_tokens)
             records.append(
                 {
                     "global_step": global_step,
-                    "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                    "created_at_utc": datetime.now(UTC).isoformat(),
                     "prompt": prompt,
                     "completion": completion,
                 }
@@ -187,7 +190,11 @@ def log_sample_generations(
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         if was_training:
             unwrapped.train()
-        LOGGER.info("Beispiel-Generierungen fuer Schritt %d geschrieben (%d Prompts).", global_step, len(records))
+        LOGGER.info(
+            "Beispiel-Generierungen fuer Schritt %d geschrieben (%d Prompts).",
+            global_step,
+            len(records),
+        )
     except Exception as error:  # pragma: no cover - Generierung ist optionales Logging.
         LOGGER.warning("Beispiel-Generierung bei Schritt %d fehlgeschlagen: %s", global_step, error)
 
@@ -216,7 +223,10 @@ def train(
 
     # 1) Torch-freie Preflight-Checks (Config, Pfade, Tokenizer-Hash, Basismodell).
     preflight = run_preflight(config_path, data_config_path)
-    LOGGER.info("Preflight OK. Tokenizer identisch zum Basismodell: %s", preflight["tokenizer"]["identical_to_base_model"])
+    LOGGER.info(
+        "Preflight OK. Tokenizer identisch zum Basismodell: %s",
+        preflight["tokenizer"]["identical_to_base_model"],
+    )
     for note in preflight.get("notes", []):
         LOGGER.info(note)
 
@@ -232,7 +242,9 @@ def train(
     LOGGER.info("Parameterzahl exakt geprueft: %s", f"{parameter_count:,}")
 
     # 3) Resume eines eigenen 1.6-Laufs? Sonst weights-only Init aus dem Basismodell.
-    resume_value = resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    resume_value = (
+        resume_from if resume_from is not None else training_config.get("resume_from_checkpoint")
+    )
     resume_checkpoint = resolve_resume_checkpoint(output_dir, resume_value)
     init_report: dict = {}
     if resume_checkpoint is None:
@@ -247,7 +259,9 @@ def train(
         model.to(device)
         model.eval()
         seq_len = int(config["data"]["block_size"])
-        input_ids = torch.randint(0, tokenizer_info.vocab_size, (1, seq_len), dtype=torch.long, device=device)
+        input_ids = torch.randint(
+            0, tokenizer_info.vocab_size, (1, seq_len), dtype=torch.long, device=device
+        )
         attention_mask = torch.ones_like(input_ids)
         with torch.no_grad():
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=input_ids)
@@ -260,14 +274,24 @@ def train(
         )
         return output_dir
 
-    max_steps = int(max_steps_override if max_steps_override is not None else training_config["max_steps"])
+    max_steps = int(
+        max_steps_override if max_steps_override is not None else training_config["max_steps"]
+    )
     if max_steps <= 0:
         output_dir.mkdir(parents=True, exist_ok=True)
-        LOGGER.info("max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 oder --dry-run.", max_steps)
+        LOGGER.info(
+            "max_steps=%d: Kein Training gestartet. Nutze --max-steps 1 oder --dry-run.", max_steps
+        )
         return output_dir
 
-    train_dataset, validation_dataset, data_stats = build_datasets(config, tokenizer_info, llama_config)
-    LOGGER.info("Train-Sequenzen: %d | Validation-Sequenzen: %d", len(train_dataset), len(validation_dataset))
+    train_dataset, validation_dataset, data_stats = build_datasets(
+        config, tokenizer_info, llama_config
+    )
+    LOGGER.info(
+        "Train-Sequenzen: %d | Validation-Sequenzen: %d",
+        len(train_dataset),
+        len(validation_dataset),
+    )
     if "test" in data_stats:
         LOGGER.info("Test-Sequenzen geprueft: %d", data_stats["test"]["sequences"])
 
@@ -300,7 +324,9 @@ def train(
     start_epoch = 0
     if resume_checkpoint is not None:
         # Nur beim Fortsetzen EINES EIGENEN 1.6-Laufs wird der Trainingszustand geladen.
-        state = torch.load(resume_checkpoint / "training_state.pt", map_location="cpu", weights_only=False)
+        state = torch.load(
+            resume_checkpoint / "training_state.pt", map_location="cpu", weights_only=False
+        )
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
         start_step = int(state["global_step"])
@@ -319,7 +345,9 @@ def train(
     global_step = start_step
     epoch = start_epoch
     running_loss = 0.0
-    LOGGER.info("Starte Continued Pretraining bis Schritt %d auf %s.", max_steps, accelerator.device)
+    LOGGER.info(
+        "Starte Continued Pretraining bis Schritt %d auf %s.", max_steps, accelerator.device
+    )
 
     while global_step < max_steps:
         epoch += 1
@@ -329,7 +357,9 @@ def train(
                 loss = outputs.loss
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
-                    accelerator.clip_grad_norm_(model.parameters(), float(training_config["max_grad_norm"]))
+                    accelerator.clip_grad_norm_(
+                        model.parameters(), float(training_config["max_grad_norm"])
+                    )
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
@@ -367,10 +397,20 @@ def train(
                         eos_token_id=tokenizer_info.eos_token_id,
                         pad_token_id=tokenizer_info.pad_token_id,
                     )
-                if accelerator.is_main_process and global_step % int(training_config["save_steps"]) == 0:
+                if (
+                    accelerator.is_main_process
+                    and global_step % int(training_config["save_steps"]) == 0
+                ):
                     save_checkpoint(
-                        accelerator, model, optimizer, scheduler, output_dir,
-                        global_step, epoch, config, tokenizer_info.tokenizer_dir,
+                        accelerator,
+                        model,
+                        optimizer,
+                        scheduler,
+                        output_dir,
+                        global_step,
+                        epoch,
+                        config,
+                        tokenizer_info.tokenizer_dir,
                     )
                 if global_step >= max_steps:
                     break
@@ -379,21 +419,38 @@ def train(
         final_checkpoint = checkpoint_for_step(output_dir, global_step)
         if not checkpoint_is_complete(final_checkpoint):
             save_checkpoint(
-                accelerator, model, optimizer, scheduler, output_dir,
-                global_step, epoch, config, tokenizer_info.tokenizer_dir,
+                accelerator,
+                model,
+                optimizer,
+                scheduler,
+                output_dir,
+                global_step,
+                epoch,
+                config,
+                tokenizer_info.tokenizer_dir,
             )
 
     accelerator.wait_for_everyone()
-    return save_final_model(accelerator, model, output_dir, config, tokenizer_info.tokenizer_dir, global_step)
+    return save_final_model(
+        accelerator, model, output_dir, config, tokenizer_info.tokenizer_dir, global_step
+    )
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Weights-only Continued Pretraining fuer quantum-1.6-pilot.")
+    parser = argparse.ArgumentParser(
+        description="Weights-only Continued Pretraining fuer quantum-1.6-pilot."
+    )
     parser.add_argument("--config", default="configs/quantum_1_6_pilot_train.yaml")
     parser.add_argument("--data-config", default="configs/quantum_1_6_pilot_data.yaml")
-    parser.add_argument("--resume-from", help="Checkpoint-Ordner eines eigenen 1.6-Laufs oder 'auto'.")
-    parser.add_argument("--max-steps", type=int, help="Maximale Trainingsschritte fuer einen Smoke-Test.")
-    parser.add_argument("--dry-run", action="store_true", help="Init + Forward Pass, nichts speichern.")
+    parser.add_argument(
+        "--resume-from", help="Checkpoint-Ordner eines eigenen 1.6-Laufs oder 'auto'."
+    )
+    parser.add_argument(
+        "--max-steps", type=int, help="Maximale Trainingsschritte fuer einen Smoke-Test."
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Init + Forward Pass, nichts speichern."
+    )
     return parser.parse_args(argv)
 
 

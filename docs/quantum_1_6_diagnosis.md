@@ -1,4 +1,7 @@
-# quantum-1.6-pilot Generationsdiagnose
+# rappidAI Quantum — quantum-1.6-pilot generation diagnosis
+
+> Historical diagnostic procedure from the earlier Lumen project phase. The
+> current project identity is rappidAI Quantum; results remain experiment-specific.
 
 Diese Diagnose klaert reproduzierbar, ob schlechte Antworten aus dem
 PyTorch-Checkpoint, dem GGUF/llama.cpp-Pfad oder der Android-App-Inferenz
@@ -41,7 +44,7 @@ controlled_sampling: temperature=0.7, top_p=0.9, top_k=40, max_new_tokens=64
 ## Windows-Tests
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 python -m pytest tests\test_diagnose_quantum_generation.py
 python -m pytest

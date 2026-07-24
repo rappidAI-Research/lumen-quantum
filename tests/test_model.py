@@ -4,7 +4,6 @@ import torch
 
 from scripts.train_smoke import build_llama_config, build_model, count_parameters, load_yaml_config
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 

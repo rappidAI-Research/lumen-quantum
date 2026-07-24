@@ -6,9 +6,9 @@ import argparse
 import json
 import logging
 from collections import Counter
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -45,7 +45,10 @@ def summarize_records(records: list[dict]) -> dict:
         "min_chars": lengths[0],
         "median_chars": lengths[len(lengths) // 2],
         "max_chars": lengths[-1],
-        "approx_tokens": sum(int(record.get("approx_token_count", max(1, round(len(record.get("text", "")) / 4)))) for record in records),
+        "approx_tokens": sum(
+            int(record.get("approx_token_count", max(1, round(len(record.get("text", "")) / 4))))
+            for record in records
+        ),
         "documents_with_url": url_count,
         "source_counts": dict(source_counter),
         "sample_ids": [record.get("id") for record in records[:5]],
@@ -59,7 +62,7 @@ def run(config_path: str | Path) -> Path:
     report_dir.mkdir(parents=True, exist_ok=True)
 
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "source": config["source"],
         "seed": int(config["seed"]),
         "splits": {},

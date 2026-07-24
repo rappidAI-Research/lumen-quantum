@@ -19,9 +19,9 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -33,7 +33,12 @@ except ImportError:
 
 LOGGER = logging.getLogger("lumen.exclude_known_documents")
 
-DEFAULT_PREVIOUS_FILES = ("documents_cleaned.jsonl", "train.jsonl", "validation.jsonl", "test.jsonl")
+DEFAULT_PREVIOUS_FILES = (
+    "documents_cleaned.jsonl",
+    "train.jsonl",
+    "validation.jsonl",
+    "test.jsonl",
+)
 DEFAULT_FINGERPRINT_FIELDS = ("sha256", "id")
 
 
@@ -81,7 +86,11 @@ def build_exclusion_fingerprints(
                 count += 1
                 _ = before
             sources[str(file_path)] = count
-    return fingerprints, {"documents_scanned": documents_scanned, "sources": sources, "fields": fields}
+    return fingerprints, {
+        "documents_scanned": documents_scanned,
+        "sources": sources,
+        "fields": fields,
+    }
 
 
 def filter_new_documents(
@@ -144,10 +153,12 @@ def run(config_path: str | Path) -> Path:
     # Nur den NEUEN Datensatz zurueckschreiben.
     write_jsonl(kept, cleaned_file)
 
-    report_file = Path(overlap_config.get("report_file", cleaned_dir.parent / "reports" / "overlap_report.json"))
+    report_file = Path(
+        overlap_config.get("report_file", cleaned_dir.parent / "reports" / "overlap_report.json")
+    )
     report_file.parent.mkdir(parents=True, exist_ok=True)
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "config_file": str(config_path),
         "new_cleaned_file": str(cleaned_file),
         "previous_dataset_dirs": [str(p) for p in previous_dirs],

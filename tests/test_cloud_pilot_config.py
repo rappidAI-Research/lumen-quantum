@@ -12,7 +12,6 @@ from scripts.train_quantum_pilot import (
 )
 from scripts.train_quantum_tokenizer import train_quantum_tokenizer
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -24,9 +23,11 @@ def _write_jsonl(path: Path, texts: list[str]) -> None:
     )
 
 
-def _tokenizer_config(tmp_path: Path, train_file: Path, tokenizer_dir: Path, vocab_size: int = 128) -> Path:
+def _tokenizer_config(
+    tmp_path: Path, train_file: Path, tokenizer_dir: Path, vocab_size: int = 128
+) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "tokenizer_name": "cloud-pilot-test"},
+        "project": {"name": "rappidAI Quantum", "tokenizer_name": "cloud-pilot-test"},
         "seed": 123,
         "data": {"train_file": str(train_file), "text_field": "text"},
         "tokenizer": {
@@ -74,7 +75,11 @@ def _write_tokenized_split(path: Path, vocab_size: int = 128, context_length: in
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "labels": labels,
-            "metadata": {"split": path.stem, "vocab_size": vocab_size, "context_length": context_length},
+            "metadata": {
+                "split": path.stem,
+                "vocab_size": vocab_size,
+                "context_length": context_length,
+            },
         },
         path,
     )
@@ -82,7 +87,11 @@ def _write_tokenized_split(path: Path, vocab_size: int = 128, context_length: in
 
 def _tiny_cloud_config(tmp_path: Path, tokenizer_dir: Path, tokenized_dir: Path) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "model_name": "quantum-1-base-test", "run_name": "dry-run"},
+        "project": {
+            "name": "rappidAI Quantum",
+            "model_name": "quantum-1-base-test",
+            "run_name": "dry-run",
+        },
         "seed": 123,
         "tokenizer": {"dir": str(tokenizer_dir), "manifest_file": "tokenizer_manifest.json"},
         "data": {
@@ -134,7 +143,9 @@ def _tiny_cloud_config(tmp_path: Path, tokenizer_dir: Path, tokenized_dir: Path)
 
 
 def test_cloud_pilot_yaml_has_expected_training_controls():
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "quantum_1_cloud_pilot.yaml").read_text(encoding="utf-8"))
+    config = yaml.safe_load(
+        (PROJECT_ROOT / "configs" / "quantum_1_cloud_pilot.yaml").read_text(encoding="utf-8")
+    )
 
     assert config["project"]["model_name"] == "quantum-1-base"
     assert config["data"]["tokenized_dir"] == "data/quantum/tokenized/pilot"
@@ -163,7 +174,9 @@ def test_tokenized_dataset_validation_checks_shapes_and_vocab(tmp_path):
     for split in ["train", "validation", "test"]:
         _write_tokenized_split(tokenized_dir / f"{split}.pt", vocab_size=128, context_length=16)
 
-    stats = validate_tokenized_data_dir({"tokenized_dir": str(tokenized_dir)}, vocab_size=128, context_length=16)
+    stats = validate_tokenized_data_dir(
+        {"tokenized_dir": str(tokenized_dir)}, vocab_size=128, context_length=16
+    )
     dataset = TokenizedTensorDataset(tokenized_dir / "train.pt", vocab_size=128, context_length=16)
 
     assert stats["train"]["sequences"] == 2

@@ -19,11 +19,10 @@ import argparse
 import hashlib
 import json
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import yaml
-
 
 LOGGER = logging.getLogger("lumen.quantum_1_6_preflight")
 
@@ -201,7 +200,9 @@ def check_tokenizer_compatibility(config: dict) -> dict:
         raise PreflightError(
             f"tokenizer.dir muss der korrekte finale Tokenizer {FROZEN_TOKENIZER_DIR!r} sein, ist: {_as_posix(tokenizer_dir)!r}."
         )
-    base_tokenizer_dir = Path(config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"]))
+    base_tokenizer_dir = Path(
+        config["init"].get("base_model_tokenizer_dir", config["init"]["from_model"])
+    )
 
     frozen_model = tokenizer_dir / "tokenizer.model"
     base_model_tok = base_tokenizer_dir / "tokenizer.model"
@@ -230,7 +231,9 @@ def check_tokenizer_compatibility(config: dict) -> dict:
     # Manifest defensiv lesen (Name/Vokabular sind hilfreich, aber der SHA256 ist maßgeblich).
     tokenizer_name = None
     vocab_size = None
-    manifest_path = tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+    manifest_path = tokenizer_dir / config["tokenizer"].get(
+        "manifest_file", "tokenizer_manifest.json"
+    )
     if manifest_path.exists():
         manifest = read_json(manifest_path)
         tokenizer_name = manifest.get("tokenizer_name")
@@ -259,7 +262,9 @@ def check_base_model_present(config: dict) -> dict:
     if not base_dir.exists():
         raise FileNotFoundError(f"Basismodell-Ordner nicht gefunden: {base_dir}")
     config_json = base_dir / "config.json"
-    has_weights = (base_dir / "model.safetensors").exists() or (base_dir / "pytorch_model.bin").exists()
+    has_weights = (base_dir / "model.safetensors").exists() or (
+        base_dir / "pytorch_model.bin"
+    ).exists()
     if not config_json.exists():
         raise FileNotFoundError(f"config.json des Basismodells fehlt: {config_json}")
     if not has_weights:
@@ -269,11 +274,15 @@ def check_base_model_present(config: dict) -> dict:
     return {
         "base_model_dir": _as_posix(base_dir),
         "config_json": str(config_json),
-        "weights_file": "model.safetensors" if (base_dir / "model.safetensors").exists() else "pytorch_model.bin",
+        "weights_file": "model.safetensors"
+        if (base_dir / "model.safetensors").exists()
+        else "pytorch_model.bin",
     }
 
 
-def run_preflight(train_config_path: str | Path, data_config_path: str | Path | None = None) -> dict:
+def run_preflight(
+    train_config_path: str | Path, data_config_path: str | Path | None = None
+) -> dict:
     """Fuehrt alle torch-freien Preflight-Checks aus und liefert einen Report."""
 
     config = load_yaml_config(train_config_path)
@@ -300,7 +309,9 @@ def run_preflight(train_config_path: str | Path, data_config_path: str | Path | 
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Torch-freie Preflight-Checks fuer quantum-1.6-pilot.")
+    parser = argparse.ArgumentParser(
+        description="Torch-freie Preflight-Checks fuer quantum-1.6-pilot."
+    )
     parser.add_argument("--config", default="configs/quantum_1_6_pilot_train.yaml")
     parser.add_argument("--data-config", default="configs/quantum_1_6_pilot_data.yaml")
     parser.add_argument("--json", action="store_true", help="Report als JSON ausgeben.")
@@ -315,8 +326,14 @@ def main(argv: Iterable[str] | None = None) -> None:
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return
     LOGGER.info("Preflight OK fuer %s", report["model_name"])
-    LOGGER.info("Tokenizer identisch zum Basismodell: %s", report["tokenizer"]["identical_to_base_model"])
-    LOGGER.info("Basismodell-Gewichte: %s/%s", report["base_model"]["base_model_dir"], report["base_model"]["weights_file"])
+    LOGGER.info(
+        "Tokenizer identisch zum Basismodell: %s", report["tokenizer"]["identical_to_base_model"]
+    )
+    LOGGER.info(
+        "Basismodell-Gewichte: %s/%s",
+        report["base_model"]["base_model_dir"],
+        report["base_model"]["weights_file"],
+    )
     for note in report["notes"]:
         LOGGER.info(note)
 

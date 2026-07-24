@@ -11,9 +11,9 @@ import argparse
 import json
 import logging
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import torch
 import yaml
@@ -111,7 +111,9 @@ def load_quantum_tokenizer_info(config: dict) -> QuantumTokenizerInfo:
 
     tokenizer_config = read_json(tokenizer_dir / "tokenizer_config.json")
     special_tokens_map = read_json(tokenizer_dir / "special_tokens_map.json")
-    manifest = read_json(tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json"))
+    manifest = read_json(
+        tokenizer_dir / config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+    )
 
     tokenizer_model = tokenizer_dir / "tokenizer.model"
     sp = spm.SentencePieceProcessor(model_file=str(tokenizer_model))
@@ -142,7 +144,9 @@ def load_quantum_tokenizer_info(config: dict) -> QuantumTokenizerInfo:
 
     manifest_vocab = int(manifest.get("actual_vocab_size", -1))
     if manifest_vocab != vocab_size:
-        raise ValueError(f"Tokenizer-Manifest vocab_size={manifest_vocab}, tokenizer.model={vocab_size}.")
+        raise ValueError(
+            f"Tokenizer-Manifest vocab_size={manifest_vocab}, tokenizer.model={vocab_size}."
+        )
 
     return QuantumTokenizerInfo(
         tokenizer_dir=tokenizer_dir,

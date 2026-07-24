@@ -1,4 +1,7 @@
-# quantum-1 Cloud-GPU-Pilot
+# rappidAI Quantum — quantum-1 Cloud-GPU pilot
+
+> Historical pilot procedure from the earlier Lumen project phase. The current
+> project identity is rappidAI Quantum; this document is retained for provenance.
 
 Diese Anleitung bereitet den ersten kurzen Cloud-Pilotlauf fuer
 `quantum-1-base` vor. Es wird keine Architektur geaendert, kein Tokenizer neu
@@ -30,7 +33,7 @@ Diese Dateien muessen auf der Maschine vorhanden sein:
 Windows PowerShell:
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 python scripts\train_quantum_pilot.py --config configs\quantum_1_cloud_pilot.yaml --dry-run
 ```

@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 
 import json
-import os
 import statistics
-import sys
 from collections import Counter
 from pathlib import Path
 
 from datasets import load_dataset
 
-
 SAMPLE_SIZE = 5000
-OUTPUT = Path(
-    "reports/quantum-1-echelon/source_metadata_analysis.json"
-)
+OUTPUT = Path("reports/quantum-1-echelon/source_metadata_analysis.json")
 
 
 def quantiles(values: list[float]) -> dict[str, float | None]:
@@ -94,16 +89,18 @@ def main() -> None:
             cluster_sizes.append(int(cluster_size))
 
         if len(examples) < 5:
-            examples.append({
-                "language": language,
-                "language_script": script,
-                "language_score": language_score,
-                "quality_score": quality_score,
-                "minhash_cluster_size": cluster_size,
-                "top_langs": sample.get("top_langs"),
-                "url": sample.get("url"),
-                "text_preview": " ".join(text.split())[:300],
-            })
+            examples.append(
+                {
+                    "language": language,
+                    "language_script": script,
+                    "language_score": language_score,
+                    "quality_score": quality_score,
+                    "minhash_cluster_size": cluster_size,
+                    "top_langs": sample.get("top_langs"),
+                    "url": sample.get("url"),
+                    "text_preview": " ".join(text.split())[:300],
+                }
+            )
 
     report = {
         "sample_size": sum(languages.values()),
@@ -111,12 +108,8 @@ def main() -> None:
         "language_scripts": dict(scripts),
         "language_score": quantiles(language_scores),
         "quality_score": quantiles(quality_scores),
-        "minhash_cluster_size": quantiles(
-            [float(value) for value in cluster_sizes]
-        ),
-        "text_length": quantiles(
-            [float(value) for value in text_lengths]
-        ),
+        "minhash_cluster_size": quantiles([float(value) for value in cluster_sizes]),
+        "text_length": quantiles([float(value) for value in text_lengths]),
         "missing_fields": dict(missing),
         "examples": examples,
         "note": "Embeddings wurden bewusst nicht geladen oder ausgegeben.",

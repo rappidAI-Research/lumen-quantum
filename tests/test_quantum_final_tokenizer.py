@@ -31,7 +31,7 @@ def _tokenizer_config(tmp_path: Path, vocab_size: int = 160) -> tuple[Path, Path
     train_file = tmp_path / "data" / "quantum" / "final" / "cleaned" / "train.jsonl"
     tokenizer_dir = tmp_path / "tokenizer" / "quantum-1"
     config = {
-        "project": {"name": "Lumen Quantum", "tokenizer_name": "quantum-1"},
+        "project": {"name": "rappidAI Quantum", "tokenizer_name": "quantum-1"},
         "seed": 20260704,
         "data": {"train_file": str(train_file), "text_field": "text"},
         "tokenizer": {
@@ -82,7 +82,7 @@ def _tokenizer_config(tmp_path: Path, vocab_size: int = 160) -> tuple[Path, Path
 
 def _train_config(tmp_path: Path, tokenizer_dir: Path, vocab_size: int | str = 160) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "model_name": "quantum-1-base"},
+        "project": {"name": "rappidAI Quantum", "model_name": "quantum-1-base"},
         "seed": 20260704,
         "tokenizer": {"dir": str(tokenizer_dir), "manifest_file": "tokenizer_manifest.json"},
         "model": {"vocab_size": vocab_size},
@@ -148,7 +148,9 @@ def test_final_tokenizer_rejects_validation_training_file(tmp_path):
     validation_file.write_text(train_file.read_text(encoding="utf-8"), encoding="utf-8")
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     config["data"]["train_file"] = str(validation_file)
-    config_path.write_text(yaml.safe_dump(config, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    config_path.write_text(
+        yaml.safe_dump(config, sort_keys=False, allow_unicode=True), encoding="utf-8"
+    )
 
     with pytest.raises(ValueError, match="train.jsonl"):
         train_quantum_tokenizer(config_path)

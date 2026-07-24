@@ -5,10 +5,7 @@ from pathlib import Path
 
 from datasets import load_dataset
 
-
-OUTPUT = Path(
-    "reports/quantum-1-echelon/quality_score_examples.json"
-)
+OUTPUT = Path("reports/quantum-1-echelon/quality_score_examples.json")
 
 BANDS = {
     "very_low": (0.00, 0.08),
@@ -43,15 +40,15 @@ def main() -> None:
 
         for name, (minimum, maximum) in BANDS.items():
             if minimum <= score < maximum and len(examples[name]) < 3:
-                examples[name].append({
-                    "quality_score": score,
-                    "language_score": sample.get("language_score"),
-                    "minhash_cluster_size": sample.get(
-                        "minhash_cluster_size"
-                    ),
-                    "url": sample.get("url"),
-                    "preview": " ".join(text.split())[:500],
-                })
+                examples[name].append(
+                    {
+                        "quality_score": score,
+                        "language_score": sample.get("language_score"),
+                        "minhash_cluster_size": sample.get("minhash_cluster_size"),
+                        "url": sample.get("url"),
+                        "preview": " ".join(text.split())[:500],
+                    }
+                )
                 break
 
         if all(len(values) >= 3 for values in examples.values()):

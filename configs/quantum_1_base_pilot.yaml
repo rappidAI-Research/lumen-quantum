@@ -1,5 +1,5 @@
 project:
-  name: "Lumen Quantum"
+  name: "rappidAI Quantum"
   model_name: "quantum-1-base"
   description: "Pilot-Architektur fuer quantum-1-base; noch kein grosses Training."
 

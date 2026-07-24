@@ -1,0 +1,2 @@
+# Contributor environment, including the CPU-capable ML and quality stacks.
+-e .[ml,dev]

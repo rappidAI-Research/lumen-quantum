@@ -44,10 +44,10 @@ def manual_parameter_count(model: dict[str, Any]) -> int:
     embeddings = vocab * hidden
 
     attention = (
-        hidden * hidden       # q_proj
-        + hidden * kv_width   # k_proj
-        + hidden * kv_width   # v_proj
-        + hidden * hidden     # o_proj
+        hidden * hidden  # q_proj
+        + hidden * kv_width  # k_proj
+        + hidden * kv_width  # v_proj
+        + hidden * hidden  # o_proj
     )
 
     mlp = (
@@ -100,10 +100,7 @@ def main() -> None:
     parser.add_argument(
         "--report",
         type=Path,
-        default=Path(
-            "reports/quantum-1-echelon/"
-            "quantum-1-echelon-base-preflight.json"
-        ),
+        default=Path("reports/quantum-1-echelon/quantum-1-echelon-base-preflight.json"),
     )
     args = parser.parse_args()
 
@@ -125,9 +122,7 @@ def main() -> None:
 
     total_parameters = sum(parameter.numel() for parameter in model.parameters())
     trainable_parameters = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     formula_parameters = manual_parameter_count(model_cfg)
@@ -185,16 +180,12 @@ def main() -> None:
     print(f"Zielbereich:          {minimum:,} bis {maximum:,}")
     print(f"Im Zielbereich:       {in_target_range}")
     print(f"BF16-Gewichte:        {memory['bf16_weights_gib']} GiB")
-    print(
-        "AdamW statisch ca.:  "
-        f"{memory['mixed_precision_adamw_static_total_gib']} GiB"
-    )
+    print(f"AdamW statisch ca.:  {memory['mixed_precision_adamw_static_total_gib']} GiB")
     print(f"Bericht:              {args.report}")
 
     if not in_target_range:
         raise SystemExit(
-            f"FEHLER: {total_parameters:,} Parameter liegen außerhalb "
-            f"des erlaubten Bereichs."
+            f"FEHLER: {total_parameters:,} Parameter liegen außerhalb des erlaubten Bereichs."
         )
 
 

@@ -1,4 +1,7 @@
-# quantum-1 Datenpipeline
+# rappidAI Quantum — quantum-1 Datenpipeline
+
+> Historical pilot procedure from the earlier Lumen project phase. The current
+> project identity is rappidAI Quantum; this document is retained for provenance.
 
 Diese Pipeline bereitet eine kleine, reproduzierbare deutsche Pilotmenge aus `epfml/FineWeb2-HQ`, Subset `deu_Latn`, vor.
 
@@ -18,7 +21,7 @@ data/quantum/reports/
 Aus dem Repository-Root:
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python scripts\download_quantum_data.py --config configs\quantum_1_data.yaml

@@ -1,624 +1,212 @@
-# Lumen Quantum
+# rappidAI Quantum
 
-Lumen Quantum ist ein kleines Python-Projekt zum Trainieren eines eigenen deutschsprachigen Decoder-only-Sprachmodells. Diese Version ist ein Smoke-Test: Sie prueft Tokenizer, Datenvorbereitung, Training, Checkpoints, Resume, Generierung, Evaluation und GGUF-Export.
+Reproducible pipelines for preparing data, training tokenizers, developing,
+evaluating, and exporting compact language models.
 
-Wichtig: Das Modell laedt niemals vortrainierte Modellgewichte. `LlamaForCausalLM` wird direkt aus `LlamaConfig` erstellt und startet mit zufaelligen Gewichten. Der Tokenizer wird ebenfalls selbst aus lokalen Textdaten trainiert.
+> **Experimental status:** this repository is pre-alpha research software. It
+> does not provide a production model, completed Echelon training run, safety
+> certification, benchmark leadership claim, or support guarantee.
 
-## Projektstruktur
+## Purpose
 
-```text
-configs/          YAML-Konfigurationen
-data/raw/         lokale Trainingsdaten als .txt
-data/processed/   Split- und Daten-Metadaten
-data/tokenized/   tokenisierte Trainingsdaten
-data/evals/       einfache Eval-Prompts und Ergebnisse
-tokenizer/        selbst trainierte Tokenizer
-scripts/          Pipeline-Skripte
-models/           lokale Checkpoints, finale Modelle und GGUF-Dateien
-tests/            Pytest-Tests
-docs/             spaetere Dokumentation
-```
+rappidAI Quantum is the technical model-development repository for the rappidAI
+research initiative. It contains Python code, versioned configurations, tests,
+and reports for data preparation, tokenizer training, model construction,
+checkpoint/resume, evaluation, and GGUF conversion. The separate website
+repository is a publication surface, not the technical core.
 
-## 1. Einrichtung unter Windows PowerShell
+Lumen was an earlier internal/project name and remains in historical commands,
+paths, and source identifiers. Files, the GitHub repository, and public model
+IDs are intentionally not renamed by this change.
 
-Empfohlen ist Python 3.12 oder 3.11.
+## Capabilities
 
-```powershell
-cd C:\LumenQuantum
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+- deterministic splitting, filtering, manifests, and tokenization;
+- SentencePiece tokenizer training and validation;
+- compact Llama-style causal-decoder configuration and CPU smoke tests;
+- random-from-scratch pilot training and weights-only continued pretraining;
+- checkpoint, optimizer, scheduler, RNG, and resume handling;
+- loss and fixed-prompt evaluation infrastructure;
+- GGUF export through an explicitly supplied external llama.cpp checkout; and
+- Echelon architecture, tokenizer, and Garden data-pipeline preflight reports.
 
-Falls du nur Python 3.11 installiert hast:
+## Model family
 
-```powershell
-py -3.11 -m venv .venv
-```
+| Model line | Role | Verified public state |
+|---|---|---|
+| `quantum-1-pilot` | Independently pretrained pilot stage | Experimental F16 GGUF published; reuse terms remain unresolved |
+| `quantum-1.6-pilot` | Continued-pretraining pilot stage | Experimental F16 GGUF published; publisher-reported metrics; final run manifest unavailable |
+| `quantum-1-echelon` | Current strategic model line | Architecture/tokenizer/data preflight only; no trained checkpoint released |
 
-## 2. Einrichtung unter Linux oder Cloud-GPU
+Echelon Base and Echelon Chat are stages or variants inside
+`quantum-1-echelon`, not separate model families. See
+[`docs/model-lineage.md`](docs/model-lineage.md) and the canonical model cards.
+
+## Five-minute CPU-only quickstart
+
+Python 3.11 and 3.12 are supported. This lightweight path does not install
+PyTorch, access a dataset, download a model, or require a GPU.
 
 ```bash
-cd /path/to/LumenQuantum
-python3.12 -m venv .venv
+git clone https://github.com/jonascikemgil07-hue/lumen-quantum.git
+cd lumen-quantum
+python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -e ".[dev]"
+python scripts/validate_repository_configs.py
+python scripts/repository_health.py
+python -m pytest tests/test_repository_health.py -m unit
 ```
 
-Falls deine Umgebung Python 3.11 nutzt:
+On PowerShell, activate with `.\.venv\Scripts\Activate.ps1`; the Python
+commands are unchanged.
+
+## Safe smoke test
+
+The default contributor smoke test is offline and CPU-only:
 
 ```bash
-python3.11 -m venv .venv
+ruff format --check .
+ruff check .
+mypy
+python scripts/validate_repository_configs.py
+python scripts/check_markdown_links.py
+python scripts/check_secrets.py
+python -m pytest -m "not slow and not gpu and not network"
 ```
 
-Optional CUDA pruefen:
+The final test command requires the ML extra. Install it with
+`python -m pip install -r requirements-dev.txt`. It can be substantially larger
+than the lightweight setup and must not download model or dataset artifacts.
 
-```bash
-python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
-```
+## Architecture
 
-## 3. Beispiel-Trainingsdaten erstellen
-
-Windows PowerShell:
-
-```powershell
-@"
-Lumen ist ein deutschsprachiger Assistent.
-Er antwortet ruhig, klar und hilfreich.
-
-Die Sonne scheint ueber der Stadt.
-Ein kleines Modell lernt zuerst nur den Ablauf.
-
-Frage: Was ist Lumen?
-Antwort: Lumen ist ein lokaler Testassistent.
-"@ | Set-Content -Encoding UTF8 data\raw\beispiel.txt
-```
-
-Linux Bash:
-
-```bash
-cat > data/raw/beispiel.txt <<'EOF'
-Lumen ist ein deutschsprachiger Assistent.
-Er antwortet ruhig, klar und hilfreich.
-
-Die Sonne scheint ueber der Stadt.
-Ein kleines Modell lernt zuerst nur den Ablauf.
-
-Frage: Was ist Lumen?
-Antwort: Lumen ist ein lokaler Testassistent.
-EOF
-```
-
-## 4. Alte Smoke-Artefakte entfernen
-
-Wenn du bereits einen Smoke-Lauf mit dem alten Byte-Level-BPE-Tokenizer gemacht hast, loesche die abgeleiteten Artefakte. Die Rohdaten in `data/raw/` bleiben erhalten.
-
-Windows PowerShell:
-
-```powershell
-Remove-Item -Recurse -Force tokenizer\smoke, data\tokenized\*, data\processed\*, models\smoke -ErrorAction SilentlyContinue
-```
-
-Linux:
-
-```bash
-rm -rf tokenizer/smoke data/tokenized/* data/processed/* models/smoke
-```
-
-Die neue Reihenfolge ist:
+The repository is configuration-driven:
 
 ```text
-Tokenizer neu trainieren -> Daten neu tokenisieren -> Smoke-Modell neu trainieren -> GGUF exportieren
+versioned YAML + local/streamed inputs
+  -> data filtering, stable splits, manifests
+  -> tokenizer training and validation
+  -> Llama-style model configuration and preflight
+  -> CPU/GPU training with checkpoints and resume
+  -> loss and completion evaluation
+  -> explicit external llama.cpp GGUF conversion
 ```
 
-## 5. Tokenizer trainieren
+Generated datasets, tokenizers, checkpoints, logs, and exports are ignored.
+Only small evaluation prompts and evidence reports are tracked. See
+[`docs/architecture.md`](docs/architecture.md).
 
-Der Smoke-Tokenizer ist ein selbst trainierter SentencePiece-BPE-Tokenizer. Das ist wichtig fuer llama.cpp/GGUF, weil der klassische LLaMA-Konverter `tokenizer.model` erwartet. Die Special Tokens sind LLaMA-kompatibel: `<unk>` = 0, `<s>` = 1, `</s>` = 2, `<pad>` = 3. Byte-Fallback bleibt fuer diesen Smoke-Test aus.
+## Data pipeline
 
-Windows:
+Pilot and Echelon configurations reference `epfml/FineWeb2-HQ`. The Echelon
+production config pins a dataset revision; several older pilot configs still use
+mutable `main` and are not release-reproducible. Dataset terms, source-page
+rights, personal-information handling, filtering, and removal obligations are
+separate from the source-code license. See [`docs/datasets.md`](docs/datasets.md)
+and [`DATA_SOURCES.md`](DATA_SOURCES.md).
 
-```powershell
-python scripts\train_tokenizer.py --config configs\smoke_5m.yaml
-```
+## Tokenizer pipeline
 
-Linux:
+The pilots and Echelon use separately versioned SentencePiece configurations.
+Tokenizer identity is enforced with vocabulary, special-token, and checksum
+checks where evidence exists. Tokenizer binaries are ignored and do not inherit
+Apache-2.0. See [`docs/tokenizers.md`](docs/tokenizers.md).
+
+## Training and resume
+
+The historical pilot line starts from random weights. `quantum-1.6-pilot`
+performs weights-only initialization from the earlier pilot while resetting the
+optimizer, scheduler, and step. Resume files contain Python pickle data through
+`torch.load(..., weights_only=False)` and must be treated as trusted local
+artifacts only. See [`docs/training.md`](docs/training.md).
+
+The historical “no pretrained weights” rule applies to the from-scratch pilot
+design. Future fine-tuned models may use upstream weights only when the model ID,
+exact revision, license, tokenizer, and modifications are documented.
+
+## Evaluation
+
+Evaluation code supports validation loss/perplexity and fixed completion
+prompts. Current pilot metrics in the model cards are publisher-reported unless
+linked to raw versioned output. No broad benchmark suite or statistical quality
+claim is available. See [`docs/evaluation.md`](docs/evaluation.md).
+
+## GGUF export
+
+llama.cpp is not vendored or a submodule. Obtain an external checkout, verify
+revision `d4cff114c0084f1fbc9b4c62717eca8fb2ae494a` for the previously tested
+baseline, then supply its path explicitly:
 
 ```bash
-python scripts/train_tokenizer.py --config configs/smoke_5m.yaml
+python scripts/export_gguf.py \
+  --model-dir models/smoke/final \
+  --output-file models/smoke/quantum-smoke-f16.gguf \
+  --llama-cpp-dir /path/to/llama.cpp
 ```
 
-Ergebnis: `tokenizer/smoke/tokenizer.model` plus zugehoerige Konfigurationsdateien.
-
-## 6. Daten vorbereiten
-
-Windows:
-
-```powershell
-python scripts\prepare_data.py --config configs\smoke_5m.yaml
-```
-
-Linux:
-
-```bash
-python scripts/prepare_data.py --config configs/smoke_5m.yaml
-```
-
-Die Dateien `data/tokenized/train.pt`, `data/tokenized/validation.pt`, optional `data/tokenized/test.pt` und Metadaten werden erzeugt.
-
-## 7. Smoke-Modell trainieren
-
-Windows:
-
-```powershell
-python scripts\train_smoke.py --config configs\smoke_5m.yaml
-```
-
-Linux:
-
-```bash
-python scripts/train_smoke.py --config configs/smoke_5m.yaml
-```
-
-Sehr kurzer Funktionstest:
-
-```powershell
-python scripts\train_smoke.py --config configs\smoke_5m.yaml --max-steps 5
-```
-
-Checkpoints landen unter `models/smoke/checkpoints/checkpoint-step-XXXXX/`, das finale Modell unter `models/smoke/final/`. Das finale Modell enthaelt `config.json`, Modellgewichte und `tokenizer.model`.
-
-## 8. Training fortsetzen
-
-Windows:
-
-```powershell
-python scripts\train_smoke.py --config configs\smoke_5m.yaml --max-steps 5
-python scripts\train_smoke.py --config configs\smoke_5m.yaml --resume-from auto
-```
-
-Linux:
-
-```bash
-python scripts/train_smoke.py --config configs/smoke_5m.yaml --max-steps 5
-python scripts/train_smoke.py --config configs/smoke_5m.yaml --resume-from auto
-```
-
-Du kannst auch einen konkreten Checkpoint-Ordner angeben, zum Beispiel `models/smoke/checkpoints/checkpoint-step-00005`.
-
-## 9. Text generieren
-
-Windows:
-
-```powershell
-python scripts\generate.py --checkpoint models\smoke\final --prompt "Lumen ist"
-```
-
-Linux:
-
-```bash
-python scripts/generate.py --checkpoint models/smoke/final --prompt "Lumen ist"
-```
-
-Optionen:
-
-```bash
-python scripts/generate.py --prompt "Frage: Was ist Lumen? Antwort:" --max-new-tokens 60 --temperature 0.8 --top-p 0.9
-```
-
-## 10. GGUF exportieren
-
-Der Export nutzt das lokal erzeugte Hugging-Face-Modell aus `models/smoke/final/` und laedt keine vortrainierten Gewichte. Der Wrapper prueft vorher `config.json`, Modellgewichte und `tokenizer.model` und ruft dann den llama.cpp-Konverter auf.
-
-Windows PowerShell, wenn llama.cpp lokal unter `C:\srv\lumen\llama.cpp` liegt:
-
-```powershell
-python scripts\export_gguf.py --model-dir models\smoke\final --output-file models\smoke\quantum-smoke-f16.gguf --llama-cpp-dir C:\srv\lumen\llama.cpp
-```
-
-Linux oder Raspberry Pi mit llama.cpp unter `/srv/lumen/llama.cpp`:
-
-```bash
-python scripts/export_gguf.py --model-dir models/smoke/final --output-file models/smoke/quantum-smoke-f16.gguf --llama-cpp-dir /srv/lumen/llama.cpp
-```
-
-Direkter llama.cpp-Konvertierungsbefehl:
-
-```bash
-python /srv/lumen/llama.cpp/convert_hf_to_gguf.py models/smoke/final --outfile models/smoke/quantum-smoke-f16.gguf --outtype f16
-```
-
-Nutze den Wrapper, wenn du vorher pruefen willst, ob `config.json`, Gewichte und `tokenizer.model` vollstaendig vorhanden sind.
-
-Auf dem Raspberry Pi testest du das zufaellig initialisierte Smoke-Modell als reine Completion, nicht als Chat:
-
-```bash
-cd /srv/lumen/llama.cpp
-./build/bin/llama-completion -m /srv/lumen/models/quantum-smoke-f16.gguf -p "Lumen ist" -n 32
-```
-
-`llama-cli` ist in aktuellen llama.cpp-Versionen ein Chat-Client. Ein zufaelliges Smoke-Modell wurde nicht auf Chat-Formate trainiert und kann deshalb mit `llama-cli` beim Parsen der Antwort abbrechen.
-
-## 11. Einfache Evaluation ausfuehren
-
-Lege zuerst Prompts an.
-
-Windows:
-
-```powershell
-@"
-Lumen ist
-Frage: Was ist Lumen? Antwort:
-Erklaere kurz, was ein Smoke-Test ist:
-"@ | Set-Content -Encoding UTF8 data\evals\prompts.txt
-python scripts\evaluate.py --checkpoint models\smoke\final --eval-file data\evals\prompts.txt
-```
-
-Linux:
-
-```bash
-cat > data/evals/prompts.txt <<'EOF'
-Lumen ist
-Frage: Was ist Lumen? Antwort:
-Erklaere kurz, was ein Smoke-Test ist:
-EOF
-python scripts/evaluate.py --checkpoint models/smoke/final --eval-file data/evals/prompts.txt
-```
-
-Die Ergebnisse werden als JSONL in `data/evals/smoke_results.jsonl` gespeichert.
-
-## 12. Tests ausfuehren
-
-Windows:
-
-```powershell
-python -m pytest
-```
-
-Linux:
-
-```bash
-python -m pytest
-```
-
-## 13. quantum-1 FineWeb2-HQ Datenpipeline vorbereiten
-
-Diese Pipeline streamt eine kleine deutsche Pilotmenge aus `epfml/FineWeb2-HQ`, Subset `deu_Latn`. Es wird kein quantum-1-Tokenizer trainiert, kein grosses Modell trainiert und es werden keine Modellgewichte geladen.
-
-Limits in `configs/quantum_1_data.yaml`:
-
-```text
-max_documents: 100000
-max_raw_bytes: 2147483648
-```
-
-Die Ausgaben liegen hier:
-
-```text
-data/quantum/raw/
-data/quantum/cleaned/
-data/quantum/manifests/
-data/quantum/reports/
-```
-
-Windows PowerShell:
-
-```powershell
-cd C:\LumenQuantum
-pip install -r requirements.txt
-python scripts\download_quantum_data.py --config configs\quantum_1_data.yaml
-python scripts\clean_quantum_data.py --config configs\quantum_1_data.yaml
-python scripts\sample_quantum_data.py --config configs\quantum_1_data.yaml
-python scripts\inspect_quantum_data.py --config configs\quantum_1_data.yaml
-python scripts\build_data_manifest.py --config configs\quantum_1_data.yaml
-```
-
-Linux oder spaeter RunPod:
-
-```bash
-cd /path/to/LumenQuantum
-pip install -r requirements.txt
-python scripts/download_quantum_data.py --config configs/quantum_1_data.yaml
-python scripts/clean_quantum_data.py --config configs/quantum_1_data.yaml
-python scripts/sample_quantum_data.py --config configs/quantum_1_data.yaml
-python scripts/inspect_quantum_data.py --config configs/quantum_1_data.yaml
-python scripts/build_data_manifest.py --config configs/quantum_1_data.yaml
-```
-
-Wichtige Dateien nach dem Lauf:
-
-```text
-data/quantum/raw/fineweb2_hq_deu_latn_raw.jsonl
-data/quantum/cleaned/documents_cleaned.jsonl
-data/quantum/cleaned/train.jsonl
-data/quantum/cleaned/validation.jsonl
-data/quantum/cleaned/test.jsonl
-data/quantum/reports/quantum_data_report.json
-data/quantum/manifests/data_manifest.json
-data/quantum/manifests/data_manifest.md
-```
-
-Die Splits werden per stabiler SHA256-Bucket-Logik erzeugt: Train 98 %, Validation 1 %, Test 1 %. Exakte Duplikate und offensichtlich unbrauchbare Texte werden entfernt. Die Tokenzahlen sind nur grobe Schaetzungen, weil fuer quantum-1 noch kein Tokenizer trainiert wird.
-
-## 14. quantum-1 Pilot-Tokenizer trainieren
-
-Dieser Schritt baut nur den Pilot-Tokenizer `quantum-1-pilot`. Er ist noch nicht der finale eingefrorene quantum-1-Tokenizer und wird spaeter auf einer groesseren dokumentierten Datenmenge neu trainiert. Es werden keine vortrainierten Tokenizer und keine Modellgewichte geladen.
-
-Der Pilot-Tokenizer wird ausschliesslich aus `data/quantum/cleaned/train.jsonl` trainiert. `validation.jsonl` und `test.jsonl` bleiben fuer Qualitaetspruefung reserviert.
-
-Windows PowerShell:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python scripts\train_quantum_tokenizer.py --config configs\quantum_1_tokenizer_pilot.yaml
-python scripts\validate_quantum_tokenizer.py --config configs\quantum_1_tokenizer_pilot.yaml
-```
-
-Ergebnis:
-
-```text
-tokenizer/quantum-1-pilot/tokenizer.model
-tokenizer/quantum-1-pilot/tokenizer.vocab
-tokenizer/quantum-1-pilot/tokenizer_config.json
-tokenizer/quantum-1-pilot/special_tokens_map.json
-tokenizer/quantum-1-pilot/tokenizer_manifest.json
-tokenizer/quantum-1-pilot/validation_report.json
-```
-
-Der Tokenizer nutzt SentencePiece BPE mit 16384 Tokens. Die LLaMA/GGUF-kompatiblen Basis-IDs bleiben fest: `<unk>` = 0, `<s>` = 1, `</s>` = 2, `<pad>` = 3. Fuer spaeteres Chat-Training sind ausserdem `<|system|>`, `<|user|>` und `<|assistant|>` enthalten.
-
-Nur die Tokenizer-Tests ausfuehren:
-
-```powershell
-python -m pytest tests\test_quantum_tokenizer.py
-```
-
-Alle Tests ausfuehren:
-
-```powershell
-python -m pytest
-```
-
-## 15. quantum-1-base Architektur pruefen
-
-Dieser Schritt baut noch kein grosses Modelltraining. Er prueft nur die echte `quantum-1-base` Pilot-Architektur mit zufaellig initialisierten Gewichten, den lokalen `quantum-1-pilot`-Tokenizer, einen CPU-Forward-Pass und temporaeres Speichern/Laden.
-
-Die geplante Architektur steht in `configs/quantum_1_base_pilot.yaml`:
-
-```text
-hidden_size: 512
-intermediate_size: 1536
-num_hidden_layers: 12
-num_attention_heads: 8
-num_key_value_heads: 8
-max_position_embeddings: 512
-tie_word_embeddings: true
-```
-
-Mit dem Pilot-Tokenizer `vocab_size = 16384` hat das Modell exakt `49,295,872` Parameter. Es liegt damit im Zielbereich von 45 bis 55 Millionen Parametern.
-
-Windows PowerShell:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-python scripts\inspect_model_size.py --config configs\quantum_1_base_pilot.yaml
-python scripts\validate_quantum_model.py --config configs\quantum_1_base_pilot.yaml
-python -m pytest tests\test_quantum_model.py
-```
-
-Optionaler Mini-Checkpoint-Test, kein grosses Training:
-
-```powershell
-python scripts\train_quantum_pilot.py --config configs\quantum_1_base_pilot.yaml --max-steps 1
-```
-
-Danach kann ein lokal gespeicherter Pilot-Checkpoint so getestet werden:
-
-```powershell
-python scripts\generate_quantum.py --config configs\quantum_1_base_pilot.yaml --checkpoint models\quantum-1-base\final --prompt "Lumen ist"
-```
-
-## 16. quantum-1 Pilotdaten tokenisieren
-
-Dieser Schritt erzeugt die Trainingssequenzen fuer den spaeteren Cloud-Pilot. Es wird noch kein Modell trainiert und kein Cloud-Server gestartet. Der lokale Tokenizer `tokenizer/quantum-1-pilot/` wird direkt als SentencePiece-Modell geladen; es werden keine vortrainierten Tokenizer oder Modellgewichte geladen.
-
-Windows PowerShell:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml
-```
-
-Falls die Ausgaben bereits existieren und du sie bewusst neu erzeugen willst:
-
-```powershell
-python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml --overwrite
-```
-
-Kleiner lokaler Limit-Test:
-
-```powershell
-python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml --overwrite --max-tokens 100000 --validation-max-tokens 20000 --test-max-tokens 20000
-```
-
-Linux oder RunPod:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/tokenize_quantum_data.py --config configs/quantum_1_pilot_data.yaml
-```
-
-Ausgabe:
-
-```text
-data/quantum/tokenized/pilot/train.pt
-data/quantum/tokenized/pilot/validation.pt
-data/quantum/tokenized/pilot/test.pt
-data/quantum/tokenized/pilot/tokenization_manifest.json
-```
-
-Die Sequenzen sind exakt 512 Tokens lang. Jedes Dokument endet vor dem Packen mit `</s>`. Die letzte unvollstaendige Sequenz wird mit `<pad>` aufgefuellt; Padding-Labels sind `-100`.
-
-Diese Daten gehoeren nicht in Git:
-
-```text
-data/quantum/raw/
-data/quantum/cleaned/
-data/quantum/tokenized/
-data/quantum/manifests/
-data/quantum/reports/
-models/
-tokenizer/
-```
-
-## 17. Cloud-GPU-Pilot vorbereiten
-
-Der Cloud-Pilot nutzt die bereits validierte `quantum-1-base` Architektur mit `49,295,872` Parametern und die tokenisierten Pilotdaten aus `data/quantum/tokenized/pilot/`. Es wird kein Cloud-Server gestartet und kein langes Training ausgefuehrt.
-
-Lokaler CPU-Dry-Run unter Windows PowerShell:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-python scripts\train_quantum_pilot.py --config configs\quantum_1_cloud_pilot.yaml --dry-run
-```
-
-RunPod/Linux Dry-Run:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml --dry-run
-```
-
-GPU-Pilot mit maximal 100 Schritten:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml
-```
-
-Resume:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/train_quantum_pilot.py --config configs/quantum_1_cloud_pilot.yaml --resume-from auto
-```
-
-Beim Start loggt das Skript Geraet, GPU-Name, VRAM, PyTorch-Version, CUDA-Version und Mixed Precision. Auf CUDA wird automatisch `bf16` bevorzugt, sonst `fp16`; auf CPU bleibt Mixed Precision aus.
-
-## 18. quantum-1 finale v1-Pipeline vorbereiten
-
-Der erfolgreiche Cloud-Pilot bleibt archiviert. Die finale v1-Pipeline nutzt getrennte Pfade und ueberschreibt keine Pilotdaten:
-
-```text
-data/quantum/final/
-tokenizer/quantum-1/
-models/quantum-1-base/
-```
-
-Finale Datenbasis erzeugen und vor Tokenisierung validieren:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-python scripts\download_quantum_data.py --config configs\quantum_1_final_data.yaml
-python scripts\clean_quantum_data.py --config configs\quantum_1_final_data.yaml
-python scripts\sample_quantum_data.py --config configs\quantum_1_final_data.yaml
-python scripts\inspect_quantum_data.py --config configs\quantum_1_final_data.yaml
-python scripts\build_data_manifest.py --config configs\quantum_1_final_data.yaml
-python scripts\validate_final_data.py --data-config configs\quantum_1_final_data.yaml --skip-tokenized
-```
-
-Finalen Tokenizer trainieren und einfrieren:
-
-```powershell
-python scripts\train_quantum_tokenizer.py --config configs\quantum_1_final_tokenizer.yaml
-python scripts\validate_final_tokenizer.py --config configs\quantum_1_final_tokenizer.yaml
-```
-
-Final tokenisieren und exakt berichten:
-
-```powershell
-python scripts\tokenize_quantum_data.py --config configs\quantum_1_final_tokenizer.yaml
-python scripts\validate_final_data.py --data-config configs\quantum_1_final_data.yaml --tokenization-config configs\quantum_1_final_tokenizer.yaml --require-tokenized
-```
-
-Finale Modellkonfiguration pruefen, ohne Training zu starten:
-
-```powershell
-python scripts\inspect_model_size.py --config configs\quantum_1_final_train.yaml
-python scripts\validate_quantum_model.py --config configs\quantum_1_final_train.yaml
-```
-
-RunPod/Linux entspricht denselben Befehlen mit `/` statt `\`:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/download_quantum_data.py --config configs/quantum_1_final_data.yaml
-python scripts/clean_quantum_data.py --config configs/quantum_1_final_data.yaml
-python scripts/sample_quantum_data.py --config configs/quantum_1_final_data.yaml
-python scripts/inspect_quantum_data.py --config configs/quantum_1_final_data.yaml
-python scripts/build_data_manifest.py --config configs/quantum_1_final_data.yaml
-python scripts/validate_final_data.py --data-config configs/quantum_1_final_data.yaml --skip-tokenized
-python scripts/train_quantum_tokenizer.py --config configs/quantum_1_final_tokenizer.yaml
-python scripts/validate_final_tokenizer.py --config configs/quantum_1_final_tokenizer.yaml
-python scripts/tokenize_quantum_data.py --config configs/quantum_1_final_tokenizer.yaml
-python scripts/validate_final_data.py --data-config configs/quantum_1_final_data.yaml --tokenization-config configs/quantum_1_final_tokenizer.yaml --require-tokenized
-python scripts/inspect_model_size.py --config configs/quantum_1_final_train.yaml
-python scripts/validate_quantum_model.py --config configs/quantum_1_final_train.yaml
-```
-
-Nicht in Git gehoeren:
-
-```text
-data/quantum/final/
-tokenizer/quantum-1/
-models/quantum-1-base/
-logs/
-```
-
-`configs/quantum_1_final_train.yaml` setzt `training.max_steps: 0`. Fuer echtes Training muss spaeter bewusst ein anderes Schrittlimit gesetzt werden; die Pilotgewichte werden nicht uebernommen, weil der finale Tokenizer neu ist.
-
-## 19. quantum-1-base evaluieren
-
-Nach einem Training wertet `evaluate_quantum.py` das Base-Language-Model aus. Es berechnet zuerst Loss und Perplexity auf `data/quantum/final/tokenized/validation.pt` und erzeugt optional feste deutsche Completion-Beispiele aus `data/evals/quantum_1_base_v1.jsonl`.
-
-RunPod/Linux:
-
-```bash
-cd /workspace/LumenQuantum
-source .venv/bin/activate
-python scripts/evaluate_quantum.py --config configs/quantum_1_final_train.yaml --checkpoint models/quantum-1-base/final --device cuda
-```
-
-Windows/CPU:
-
-```powershell
-cd C:\LumenQuantum
-.\.venv\Scripts\Activate.ps1
-python scripts\evaluate_quantum.py --config configs\quantum_1_final_train.yaml --checkpoint models\quantum-1-base\final --device cpu
-```
-
-Die Ergebnisse landen standardmaessig hier:
-
-```text
-data/evals/results/quantum-1-base/evaluation_summary.json
-data/evals/results/quantum-1-base/generations.jsonl
-```
-
-## Hinweise
-
-- Nutze fuer echtes Training mehr und bessere deutsche Textdaten als das Mini-Beispiel.
-- Die Smoke-Konfiguration ist klein und dient nur dem Pipeline-Test.
-- Wenn du Tokenizer oder Vokabulargroesse aenderst, musst du Daten neu tokenisieren und das Modell neu trainieren.
-- Lokale Checkpoints sind erlaubt. Verboten ist das Laden vortrainierter Modellgewichte aus externen Quellen.
+See [`docs/gguf-export.md`](docs/gguf-export.md) for verification and Windows
+syntax.
+
+## Repository structure
+
+| Path | Purpose |
+|---|---|
+| `configs/` | Versioned data, tokenizer, model, training, and evaluation inputs |
+| `scripts/` | Pipeline and repository-health commands |
+| `tests/` | Unit, integration, slow, GPU, and network-classified tests |
+| `data/evals/` | Small tracked completion prompts only |
+| `reports/` | Small, reviewable preflight and smoke evidence |
+| `docs/` | Architecture, operations, lineage, licensing, and release records |
+| `model_cards/` | Canonical evidence-bounded model cards |
+
+Generated `data/`, `models/`, `tokenizer/`, `exports/`, and `logs/` content is
+local and ignored.
+
+## Reproducibility
+
+A reproducible run requires the code commit, exact configuration, dependency
+environment, source and model revisions, seeds, tokenizer checksums, data
+manifest, hardware/runtime record, checkpoints, evaluation outputs, and export
+checksums. The repository currently has gaps for the released pilots. See
+[`docs/reproducibility.md`](docs/reproducibility.md).
+
+## Limitations and security
+
+These models and pipelines can produce incorrect, biased, unsafe, or private
+content. Dataset filtering is incomplete; pilot contexts are short; Echelon is
+not trained; release licenses are incomplete; and CPU performance has not been
+published reproducibly. Do not use the outputs for high-stakes decisions. Read
+[`docs/limitations.md`](docs/limitations.md),
+[`docs/security-model.md`](docs/security-model.md), and [`SECURITY.md`](SECURITY.md).
+
+## Roadmap and contributing
+
+The near-term work is license approval, stable CI, release-manifest publication,
+raw evaluation evidence, reproducible CPU measurement, and Echelon data
+preparation. See [`ROADMAP.md`](ROADMAP.md) and
+[`CONTRIBUTING.md`](CONTRIBUTING.md). This is a sole-maintainer project and no
+response time is guaranteed.
+
+## Citation
+
+Use [`CITATION.cff`](CITATION.cff) and include the exact code commit. Cite models,
+tokenizers, and datasets separately with their own revisions, terms, manifests,
+and checksums. No DOI is published.
+
+## Licensing boundaries
+
+Original repository source and documentation are prepared under Apache-2.0,
+subject to the maintainer ownership checklist in
+[`docs/licensing.md`](docs/licensing.md). That license does not cover model
+weights, tokenizers, datasets, external tools, generated artifacts, or
+trademarks. See [`MODEL_LICENSES.md`](MODEL_LICENSES.md) and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+## Project links
+
+- Website: [rappidAI research](https://www.rappidai-research.com)
+- Hugging Face: [rappidAI](https://huggingface.co/rappidAI)
+- Pilot model: [quantum-1-pilot](https://huggingface.co/rappidAI/quantum-1-pilot)
+- Continued pilot: [quantum-1.6-pilot](https://huggingface.co/rappidAI/quantum-1.6-pilot)

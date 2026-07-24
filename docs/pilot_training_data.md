@@ -1,4 +1,7 @@
-# quantum-1 Pilot-Trainingsdaten
+# rappidAI Quantum — quantum-1 pilot training data
+
+> Historical pilot procedure from the earlier Lumen project phase. The current
+> project identity is rappidAI Quantum; this document is retained for provenance.
 
 Diese Datei beschreibt den Tokenisierungsschritt fuer den spaeteren
 Cloud-Pilot von `quantum-1-base`. Es wird noch kein Modell trainiert und kein
@@ -44,7 +47,7 @@ und koennen aus den Cleaned-Daten plus Tokenizer neu erstellt werden.
 ## Windows PowerShell
 
 ```powershell
-cd C:\LumenQuantum
+cd C:\path\to\rappidai-quantum
 .\.venv\Scripts\Activate.ps1
 python scripts\tokenize_quantum_data.py --config configs\quantum_1_pilot_data.yaml
 ```

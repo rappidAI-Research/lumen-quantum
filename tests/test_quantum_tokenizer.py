@@ -29,7 +29,7 @@ def _texts() -> list[str]:
 
 def _config(tmp_path: Path, train_file: Path, vocab_size: int = 128) -> Path:
     config = {
-        "project": {"name": "Lumen Quantum", "tokenizer_name": "quantum-1-pilot-test"},
+        "project": {"name": "rappidAI Quantum", "tokenizer_name": "quantum-1-pilot-test"},
         "seed": 123,
         "data": {"train_file": str(train_file), "text_field": "text"},
         "tokenizer": {

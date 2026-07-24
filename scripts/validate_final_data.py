@@ -10,13 +10,12 @@ import argparse
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from typing import Iterable
 
 import torch
 import yaml
-
 
 SPLITS = ("train", "validation", "test")
 REQUIRED_DATA_MANIFEST_FIELDS = [
@@ -131,7 +130,9 @@ def validate_data_manifest(config: dict) -> dict:
     if manifest.get("seed") != int(config["seed"]):
         raise ValueError("Seed im Datenmanifest stimmt nicht mit der finalen Datenconfig ueberein.")
     if manifest.get("source", {}).get("hf_dataset") != config["source"]["hf_dataset"]:
-        raise ValueError("Quelle im Datenmanifest stimmt nicht mit der finalen Datenconfig ueberein.")
+        raise ValueError(
+            "Quelle im Datenmanifest stimmt nicht mit der finalen Datenconfig ueberein."
+        )
     return manifest
 
 
@@ -169,7 +170,9 @@ def validate_cleaned_split_records(config: dict) -> tuple[dict[str, dict], dict[
             if digest in hashes:
                 raise ValueError(f"Exaktes Duplikat im Split {split}: {digest}")
             if digest in seen_hashes:
-                raise ValueError(f"Split-Ueberschneidung: {digest} in {seen_hashes[digest]} und {split}")
+                raise ValueError(
+                    f"Split-Ueberschneidung: {digest} in {seen_hashes[digest]} und {split}"
+                )
             if record.get("split") not in (None, split):
                 raise ValueError(f"Split-Feld falsch in {path}:{index}: {record.get('split')!r}")
             hashes.add(digest)
@@ -196,15 +199,21 @@ def resolve_vocab_size(tokenization_config: dict, tokenization_manifest: dict) -
     if manifest_vocab is not None:
         return int(manifest_vocab)
     tokenizer_dir = Path(tokenization_config["tokenizer"]["dir"])
-    manifest_file = tokenizer_dir / tokenization_config["tokenizer"].get("manifest_file", "tokenizer_manifest.json")
+    manifest_file = tokenizer_dir / tokenization_config["tokenizer"].get(
+        "manifest_file", "tokenizer_manifest.json"
+    )
     if manifest_file.exists():
         return int(read_json(manifest_file)["actual_vocab_size"])
-    raise FileNotFoundError("vocab_size konnte weder aus Tokenisierungs- noch Tokenizer-Manifest gelesen werden.")
+    raise FileNotFoundError(
+        "vocab_size konnte weder aus Tokenisierungs- noch Tokenizer-Manifest gelesen werden."
+    )
 
 
 def validate_tokenized_splits(tokenization_config: dict) -> dict:
     output_dir = Path(tokenization_config["output"]["dir"])
-    manifest_path = output_dir / tokenization_config["output"].get("manifest_file", "tokenization_manifest.json")
+    manifest_path = output_dir / tokenization_config["output"].get(
+        "manifest_file", "tokenization_manifest.json"
+    )
     if not manifest_path.exists():
         raise FileNotFoundError(f"Finales Tokenisierungsmanifest fehlt: {manifest_path}")
     tokenization_manifest = read_json(manifest_path)
@@ -228,7 +237,9 @@ def validate_tokenized_splits(tokenization_config: dict) -> dict:
         if input_ids.ndim != 2 or input_ids.shape[1] != context_length:
             raise ValueError(f"{path} muss Sequenzen mit exakt {context_length} Tokens enthalten.")
         if input_ids.shape != attention_mask.shape or input_ids.shape != labels.shape:
-            raise ValueError(f"input_ids, attention_mask und labels haben unterschiedliche Formen in {path}.")
+            raise ValueError(
+                f"input_ids, attention_mask und labels haben unterschiedliche Formen in {path}."
+            )
         if input_ids.numel() == 0:
             raise ValueError(f"{path} enthaelt keine Sequenzen.")
         minimum = int(input_ids.min().item())
@@ -244,21 +255,30 @@ def validate_tokenized_splits(tokenization_config: dict) -> dict:
             raise ValueError(f"{path} muss document_hashes in metadata enthalten.")
         for digest in document_hashes:
             if digest in seen_hashes:
-                raise ValueError(f"Tokenisierte Split-Ueberschneidung: {digest} in {seen_hashes[digest]} und {split}")
+                raise ValueError(
+                    f"Tokenisierte Split-Ueberschneidung: {digest} in {seen_hashes[digest]} und {split}"
+                )
             seen_hashes[digest] = split
 
         actual_tokens = int(attention_mask.sum().item())
         metadata_tokens = int(metadata.get("tokens_before_padding", actual_tokens))
         if actual_tokens != metadata_tokens:
-            raise ValueError(f"Tokenzaehlung in {path} stimmt nicht: mask={actual_tokens}, metadata={metadata_tokens}.")
+            raise ValueError(
+                f"Tokenzaehlung in {path} stimmt nicht: mask={actual_tokens}, metadata={metadata_tokens}."
+            )
         limit_key = f"{split}_max_tokens"
         limit = tokenization_config.get("limits", {}).get(limit_key)
         if limit is not None and metadata_tokens > int(limit):
             raise ValueError(f"{split} ueberschreitet Tokenlimit: {metadata_tokens} > {limit}")
 
         manifest_split = tokenization_manifest.get("splits", {}).get(split, {})
-        if manifest_split and int(manifest_split.get("tokens_before_padding", metadata_tokens)) != metadata_tokens:
-            raise ValueError(f"Tokenisierungsmanifest stimmt fuer {split} nicht mit .pt-Metadaten ueberein.")
+        if (
+            manifest_split
+            and int(manifest_split.get("tokens_before_padding", metadata_tokens)) != metadata_tokens
+        ):
+            raise ValueError(
+                f"Tokenisierungsmanifest stimmt fuer {split} nicht mit .pt-Metadaten ueberein."
+            )
 
         split_reports[split] = {
             "path": str(path),
@@ -299,9 +319,11 @@ def validate_final_data(
 
     if allow_missing:
         return {
-            "validated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "validated_at_utc": datetime.now(UTC).isoformat(),
             "data_config": str(data_config_path),
-            "tokenization_config": str(tokenization_config_path) if tokenization_config_path else str(data_config_path),
+            "tokenization_config": str(tokenization_config_path)
+            if tokenization_config_path
+            else str(data_config_path),
             "source": data_config["source"],
             "seed": int(data_config["seed"]),
             "targets": data_config.get("targets", {}),
@@ -315,22 +337,28 @@ def validate_final_data(
     tokenized_report = None
     if tokenization_config is not None:
         output_dir = Path(tokenization_config["output"]["dir"])
-        manifest_name = tokenization_config["output"].get("manifest_file", "tokenization_manifest.json")
+        manifest_name = tokenization_config["output"].get(
+            "manifest_file", "tokenization_manifest.json"
+        )
         tokenized_exists = (output_dir / manifest_name).exists()
         if require_tokenized or tokenized_exists:
             tokenized_report = validate_tokenized_splits(tokenization_config)
 
     report = {
-        "validated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "validated_at_utc": datetime.now(UTC).isoformat(),
         "data_config": str(data_config_path),
-        "tokenization_config": str(tokenization_config_path) if tokenization_config_path and not skip_tokenized else None,
+        "tokenization_config": str(tokenization_config_path)
+        if tokenization_config_path and not skip_tokenized
+        else None,
         "source": data_config["source"],
         "seed": int(data_config["seed"]),
         "sampling_seed": int(data_config["sampling"]["split_seed"]),
         "targets": data_config.get("targets", {}),
         "cleaned_splits": cleaned_stats,
         "split_hash_counts": {split: len(hashes) for split, hashes in split_hashes.items()},
-        "data_manifest_sha256": sha256_file(Path(data_config["paths"]["manifest_dir"]) / "data_manifest.json"),
+        "data_manifest_sha256": sha256_file(
+            Path(data_config["paths"]["manifest_dir"]) / "data_manifest.json"
+        ),
         "manifest_dataset_version": manifest.get("dataset_version"),
         "tokenized": tokenized_report,
         "ok": True,
@@ -343,12 +371,24 @@ def validate_final_data(
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Validiert finale quantum-1 Daten und optional Tokenisierung.")
-    parser.add_argument("--data-config", "--config", dest="data_config", default="configs/quantum_1_final_data.yaml")
+    parser = argparse.ArgumentParser(
+        description="Validiert finale quantum-1 Daten und optional Tokenisierung."
+    )
+    parser.add_argument(
+        "--data-config", "--config", dest="data_config", default="configs/quantum_1_final_data.yaml"
+    )
     parser.add_argument("--tokenization-config", default=None)
-    parser.add_argument("--require-tokenized", action="store_true", help="Tokenisierte .pt-Splits zwingend pruefen.")
-    parser.add_argument("--skip-tokenized", action="store_true", help="Nur Roh/Clean/Split/Manifest pruefen.")
-    parser.add_argument("--allow-missing", action="store_true", help="Nur Config/Pfade pruefen, fehlende Artefakte erlauben.")
+    parser.add_argument(
+        "--require-tokenized", action="store_true", help="Tokenisierte .pt-Splits zwingend pruefen."
+    )
+    parser.add_argument(
+        "--skip-tokenized", action="store_true", help="Nur Roh/Clean/Split/Manifest pruefen."
+    )
+    parser.add_argument(
+        "--allow-missing",
+        action="store_true",
+        help="Nur Config/Pfade pruefen, fehlende Artefakte erlauben.",
+    )
     parser.add_argument("--json", action="store_true", help="Validierungsreport als JSON ausgeben.")
     return parser.parse_args(argv)
 
