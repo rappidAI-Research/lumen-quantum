@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rappidAI-Research/lumen-quantum/schemas/run-manifest.schema.json",
+  "title": "rappidAI Quantum run manifest",
+  "description": "Reproducibility manifest. Unknown fields must be null, not guessed.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "code",
+    "configuration_files",
+    "python",
+    "platform",
+    "dependencies",
+    "seeds",
+    "dataset",
+    "model",
+    "tokenizer",
+    "timing",
+    "completion_status",
+    "error_status",
+    "verification_status"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": ["string", "null"] },
+    "tool": { "type": ["string", "null"] },
+    "code": {
+      "type": "object",
+      "properties": {
+        "revision": { "type": ["string", "null"] },
+        "branch": { "type": ["string", "null"] },
+        "dirty": { "type": ["boolean", "null"] }
+      }
+    },
+    "configuration_files": { "type": "array" },
+    "python": { "type": ["object", "null"] },
+    "platform": { "type": ["object", "null"] },
+    "dependencies": { "type": ["object", "null"] },
+    "seeds": { "type": ["integer", "array", "null"] },
+    "dataset": {
+      "type": "object",
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "subset": { "type": ["string", "null"] },
+        "revision": { "type": ["string", "null"] }
+      }
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "artifact_revision": { "type": ["string", "null"] },
+        "checksum": { "type": ["string", "null"] }
+      }
+    },
+    "tokenizer": {
+      "type": "object",
+      "properties": {
+        "revision": { "type": ["string", "null"] },
+        "checksum": { "type": ["string", "null"] }
+      }
+    },
+    "artifacts": { "type": "array" },
+    "hardware": { "type": ["object", "null"] },
+    "timing": {
+      "type": "object",
+      "properties": {
+        "started_at": { "type": ["string", "null"] },
+        "finished_at": { "type": ["string", "null"] }
+      }
+    },
+    "completion_status": {
+      "type": "string",
+      "enum": ["metadata-only", "completed", "failed", "incomplete", "unknown"]
+    },
+    "error_status": { "type": ["string", "null"] },
+    "verification_status": {
+      "type": "string",
+      "enum": ["unknown", "partial", "publisher-reported", "configured-target", "not-yet-completed", "verified"]
+    }
+  }
+}
