@@ -6,7 +6,8 @@ It does not guarantee selection.
 
 ## Repository
 
-- [ ] The open-source-readiness pull request is reviewed and merged.
+- [x] The open-source-readiness pull request is reviewed and merged (`7e9cb34`).
+- [ ] Confirm the newest CI run is green on `main` after the Dependabot dependency-range updates (`da79ca8`).
 - [ ] Required CI is green on the default branch.
 - [ ] The repository description identifies the actual technical scope.
 - [ ] README setup and CPU-safe verification commands work from a clean clone.

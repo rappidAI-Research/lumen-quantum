@@ -52,3 +52,41 @@ basics, leave the slot empty rather than presenting it as release-ready.
 
 Recheck public counts and repository visibility immediately before applying any
 recommendation because profile state can change.
+
+## Repository metadata (prepared, not applied)
+
+These are suggestions for the repository's GitHub "About" panel. No metadata is
+changed automatically; apply them manually only after confirming they are
+accurate.
+
+### Repository description (<= ~160 characters)
+
+```
+Reproducible Python pipelines for data preparation, tokenizer development, training, evaluation, and GGUF export of compact language models.
+```
+
+(140 characters.)
+
+### Suggested topics
+
+```
+open-source
+machine-learning
+language-model
+small-language-model
+pytorch
+tokenizers
+gguf
+reproducibility
+nlp
+ai-research
+```
+
+### Suggested About links
+
+- Technical documentation: <https://github.com/rappidAI-Research/lumen-quantum/tree/main/docs>
+- Website: <https://www.rappidai-research.com>
+- Hugging Face organization: <https://huggingface.co/rappidAI>
+
+Only topics that genuinely match the repository are listed. Do not add topics
+implying adoption, benchmarks, or production readiness that do not exist.
