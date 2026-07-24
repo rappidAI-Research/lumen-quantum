@@ -34,6 +34,7 @@ data/quantum/tokenized/*
 !data/tokenized/.gitkeep
 !data/evals/.gitkeep
 !data/evals/quantum_1_base_v1.jsonl
+!data/evals/cpu_benchmark_prompts.jsonl
 
 # Logs and temporary files
 logs/
@@ -54,6 +55,7 @@ data/**
 !data/
 !data/evals/
 !data/evals/quantum_1_base_v1.jsonl
+!data/evals/cpu_benchmark_prompts.jsonl
 data/echelon/tokenizer_training/training_text.txt
 logs/quantum-1-echelon/
 data/echelon/smoke/
