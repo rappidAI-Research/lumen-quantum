@@ -18,7 +18,8 @@ per optimizer step; they are not proof of a completed run.
 
 Echelon Base is a configured 506,333,440-parameter causal decoder. No production
 dataset or trained checkpoint is public. Echelon Chat is a future stage inside
-the same model line.
+the same model line. The [compute plan](compute-plan.md) records storage, memory,
+hardware options and the data/recipe/measurement gates before any training run.
 
 ## Resume security
 

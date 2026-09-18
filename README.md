@@ -10,7 +10,8 @@ evaluating, and exporting compact language models.
 ## Purpose
 
 rappidAI Quantum is the technical model-development repository for the rappidAI
-research initiative. It contains Python code, versioned configurations, tests,
+self-funded, founder-led, early-stage research and development initiative in
+Berlin. It contains Python code, versioned configurations, tests,
 and reports for data preparation, tokenizer training, model construction,
 checkpoint/resume, evaluation, and GGUF conversion. The separate website
 repository is a publication surface, not the technical core.
@@ -172,6 +173,15 @@ manifest, hardware/runtime record, checkpoints, evaluation outputs, and export
 checksums. The repository currently has gaps for the released pilots. See
 [`docs/reproducibility.md`](docs/reproducibility.md).
 
+## Echelon compute planning
+
+The [compute plan](docs/compute-plan.md) connects the verified architecture,
+tokenizer and Garden smoke evidence to production data, training and evaluation
+gates. It includes memory/storage calculations, AWS hardware options and cost
+controls, but is not a completed run or cloud deployment. See the
+[AWS application readiness record](docs/applications/aws-activate-readiness.md)
+for program sources and owner checks.
+
 ## Limitations and security
 
 These models and pipelines can produce incorrect, biased, unsafe, or private
@@ -183,7 +193,7 @@ published reproducibly. Do not use the outputs for high-stakes decisions. Read
 
 ## Roadmap and contributing
 
-The near-term work is license approval, stable CI, release-manifest publication,
+The near-term work is explicit artifact notices, stable CI, release-manifest publication,
 raw evaluation evidence, reproducible CPU measurement, and Echelon data
 preparation. See [`ROADMAP.md`](ROADMAP.md) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md). This is a sole-maintainer project and no
@@ -197,8 +207,8 @@ and checksums. No DOI is published.
 
 ## Licensing boundaries
 
-Original repository source and documentation are prepared under Apache-2.0,
-subject to the maintainer ownership checklist in
+Original repository source and documentation are licensed under Apache-2.0.
+The maintainer recorded source ownership approval on 2026-07-24; see
 [`docs/licensing.md`](docs/licensing.md). That license does not cover model
 weights, tokenizers, datasets, external tools, generated artifacts, or
 trademarks. See [`MODEL_LICENSES.md`](MODEL_LICENSES.md) and

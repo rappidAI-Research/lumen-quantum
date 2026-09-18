@@ -54,6 +54,9 @@ not started.
 - Base-to-Chat adaptation design and upstream license review; and
 - model/tokenizer release terms.
 
+The [compute plan](../docs/compute-plan.md) documents the next workload stages,
+resource calculations and execution gates without claiming completed training.
+
 ## Intended use
 
 Current artifacts are intended for architecture, tokenizer, configuration, and
@@ -74,5 +77,5 @@ memory, data suitability, or training success. The web-derived data risks in
 ## License and citation
 
 No model-weight or tokenizer license is selected. Source code is separately
-prepared under Apache-2.0. Cite the exact code revision and tracked reports in
+licensed under Apache-2.0. Cite the exact code revision and tracked reports in
 `reports/quantum-1-echelon/`; do not cite this as a model release.
