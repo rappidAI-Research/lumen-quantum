@@ -24,7 +24,10 @@ it is not the model-development core.
 - Known remaining deficits: historical pilot dataset revisions are still
   unrecorded; final run manifests and raw evaluation outputs are absent; no real
   CPU inference measurement exists; Echelon production and training are
-  incomplete; source-license and artifact-license decisions are open.
+  incomplete. Source ownership approval and the closed pilot-artifact decision
+  were recorded on 2026-07-24; hosting notices and provenance work remain.
+- 2026-09-18: the [compute plan](compute-plan.md) records Echelon resource
+  estimates and execution gates. It does not complete a production run.
 
 The audit findings below were the pre-merge snapshot and remain a historical
 record.
@@ -218,7 +221,13 @@ Prepared on this branch:
 Not done: no tag, GitHub release, package publication, model publication,
 dataset download, GPU run, or Echelon production run was created.
 
-## Remaining maintainer decisions
+## Historical maintainer checklist
+
+This checklist is retained as the original audit record, not the current status.
+Source ownership and NOTICE confirmation were subsequently recorded in
+[the human approval](maintainer-source-license-approval.md); pilot reuse rights
+are deliberately withheld under [MODEL_LICENSES](../MODEL_LICENSES.md).
+Current remaining work is tracked in [the roadmap](../ROADMAP.md).
 
 - [ ] Confirm source/documentation ownership and approve Apache-2.0 for the source release (merging did not make this determination).
 - [ ] Confirm `NOTICE` names and years are accurate.

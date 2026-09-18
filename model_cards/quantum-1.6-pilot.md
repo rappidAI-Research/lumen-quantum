@@ -70,7 +70,10 @@ claim is made.
 
 ## License
 
-Model-weight and tokenizer terms are unresolved. Apache-2.0 for this code
+The maintainer recorded all rights reserved for pilot weights, GGUFs and
+tokenizers on 2026-07-24: no reuse license is granted. Hosting-repository notices
+and exact tokenizer revisions still need verification; see
+[MODEL_LICENSES](../MODEL_LICENSES.md). Apache-2.0 for this code
 repository does not apply to the GGUF or tokenizer.
 
 ## Citation and sources

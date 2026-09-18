@@ -16,11 +16,15 @@ quantum-1-echelon-base.
 - Quellen, Revisionen und Lizenzen dokumentieren
 - Sprach- und Qualitätsfilter anwenden
 - Boilerplate, URL-Müll und Zahlenketten entfernen
-- Exakte und nahe Duplikate entfernen
+- Exakte Duplikate filtern; die spätere Produktionskonfiguration verlässt sich
+  für nahe Duplikate auf die vorgelagerte MinHash-Deduplizierung und Clusterfilter.
+  Sie führt keinen zusätzlichen globalen In-Memory-Near-Dedup-Pass aus.
 - Wiederholte N-Gramme prüfen
 - Stabile Train-, Validation- und Test-Splits verwenden
 - Erst danach mit dem neuen Echelon-Tokenizer tokenisieren
 
 ## Speicher
-Der Pod hat etwa 300 GB Speicher.
+Die frühere Arbeitsplanung sieht etwa 300 GB Speicher vor; dies ist kein
+Nachweis eines bereitgestellten Pods oder einer AWS-Ressource. Siehe den
+[Compute-Plan](../compute-plan.md) für Budget, Berechnungen und Ausführungsgates.
 Zwischenstände erst nach erfolgreicher Prüfung von Manifesten und Hashes löschen.

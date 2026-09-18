@@ -6,6 +6,13 @@ approved release.
 
 ## Unreleased
 
+### Readiness documentation (2026-09-18)
+
+- Add an evidence-linked Echelon compute plan and AWS Activate readiness record.
+- Reconcile current licensing prose with the existing maintainer decisions.
+- Clarify production-data and training gates without running either workload.
+
+
 ### Post-merge status
 
 - The open-source readiness pull request (#1) is merged into `main`

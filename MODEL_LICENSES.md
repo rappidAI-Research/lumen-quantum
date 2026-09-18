@@ -31,13 +31,13 @@ required maintainer action.
 | Rights holder | rappidAI (maintainer Jonas Désiré Cikemgil); legal entity Not verified |
 | Source-code license | Apache-2.0 applies to this repo only, not the weights |
 | Weight license | No explicit reuse license published |
-| Tokenizer license | Unknown |
-| Redistribution allowed | Unknown |
-| Modification allowed | Unknown |
-| Commercial use status | Unknown |
+| Tokenizer license | No reuse license granted; hosting revision still unverified |
+| Redistribution allowed | Not granted by the recorded decision |
+| Modification allowed | Not granted by the recorded decision |
+| Commercial use status | Not granted by the recorded decision |
 | Publication status | Experimental F16 GGUF published |
 | Verification status | Publisher-reported |
-| Required maintainer action | Choose and publish (or explicitly withhold) a weight license; do not describe as open weight |
+| Required maintainer action | Publish/verify an explicit no-reuse notice at the hosting revision; do not describe as open weight |
 
 ## `quantum-1.6-pilot` (model weights / GGUF)
 
@@ -48,13 +48,13 @@ required maintainer action.
 | Rights holder | rappidAI (maintainer Jonas Désiré Cikemgil); legal entity Not verified |
 | Source-code license | Apache-2.0 applies to this repo only, not the weights |
 | Weight license | No explicit reuse license published |
-| Tokenizer license | Unknown |
-| Redistribution allowed | Unknown |
-| Modification allowed | Unknown |
-| Commercial use status | Unknown |
+| Tokenizer license | No reuse license granted; hosting revision still unverified |
+| Redistribution allowed | Not granted by the recorded decision |
+| Modification allowed | Not granted by the recorded decision |
+| Commercial use status | Not granted by the recorded decision |
 | Publication status | Experimental F16 GGUF published; metrics publisher-reported |
 | Verification status | Publisher-reported |
-| Required maintainer action | Choose and publish (or explicitly withhold) a weight license; do not describe as open weight |
+| Required maintainer action | Publish/verify an explicit no-reuse notice at the hosting revision; do not describe as open weight |
 
 ## `quantum-1-echelon` (model line)
 
@@ -83,12 +83,12 @@ required maintainer action.
 | Source-code license | Tokenizer configs in-repo are Apache-2.0; trained binaries are not |
 | Weight license | Not applicable |
 | Tokenizer license | No explicit reuse license published |
-| Redistribution allowed | Unknown |
-| Modification allowed | Unknown |
-| Commercial use status | Unknown |
+| Redistribution allowed | Not granted by the recorded decision |
+| Modification allowed | Not granted by the recorded decision |
+| Commercial use status | Not granted by the recorded decision |
 | Publication status | Referenced; explicit terms Not verified |
 | Verification status | Not verified |
-| Required maintainer action | Confirm public revision and publish an explicit tokenizer license |
+| Required maintainer action | Confirm public revision and publish/verify the recorded no-reuse notice |
 
 ## Echelon tokenizer artifacts
 
@@ -101,8 +101,8 @@ required maintainer action.
 | Weight license | Not applicable |
 | Tokenizer license | No release license selected |
 | Redistribution allowed | No (until a license is chosen) |
-| Modification allowed | Unknown |
-| Commercial use status | Unknown |
+| Modification allowed | No grant documented; no release license selected |
+| Commercial use status | No grant documented; no release license selected |
 | Publication status | Checksums reported (`97dce887…`, `0fdfef7b…`, `36d3a745…`); binaries ignored |
 | Verification status | Partial (checksums verified in tracked report) |
 | Required maintainer action | Select a tokenizer license before any distribution |
@@ -115,12 +115,12 @@ required maintainer action.
 | Exact reviewed revision | See pilot rows above |
 | Files / checksums | `quantum-1-base-v1.0.0-f16.gguf` `sha256 aeab97e5…` (98,990,560 B); `quantum-1.6-pilot-v1.6.0-f16.gguf` `sha256 6bda15fc…` (98,990,560 B) |
 | Weight license | No explicit reuse license published |
-| Redistribution allowed | Unknown |
-| Modification allowed | Unknown |
-| Commercial use status | Unknown |
+| Redistribution allowed | Not granted by the recorded decision |
+| Modification allowed | Not granted by the recorded decision |
+| Commercial use status | Not granted by the recorded decision |
 | Publication status | Published F16 GGUF |
 | Verification status | Checksums/sizes verified in model cards; terms Publisher-reported |
-| Required maintainer action | Attach an explicit artifact license; do not describe as open weight |
+| Required maintainer action | Publish/verify the recorded no-reuse notice; do not describe as open weight |
 
 The Apache-2.0 source license does not apply to any artifact above. Any derived
 model must document its upstream model identifier, exact revision, license,
