@@ -11,7 +11,7 @@ import argparse
 import hashlib
 import json
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_FLOOR
+from decimal import ROUND_FLOOR, Decimal
 from pathlib import Path
 from typing import Any, cast
 
