@@ -1,0 +1,65 @@
+project:
+  model_line: quantum-1-echelon
+  stage: base
+  status: planning
+  seed: 20260718
+
+model:
+  frozen_config: null
+  tokenizer_config: null
+  context_length: 4096
+  precision: bf16
+
+optimizer:
+  name: adamw
+  fused_preferred: true
+  betas: [0.9, 0.95]
+  epsilon: 1.0e-8
+  weight_decay: 0.1
+  gradient_clip_norm: 1.0
+
+learning_rate:
+  production_peak: null
+  sweep_candidates: [0.0002, 0.0003, 0.0004]
+  sweep_tokens_per_candidate_min: 20000000
+  sweep_tokens_per_candidate_max: 30000000
+  schedule: wsd_or_cosine_pending_freeze
+  warmup_fraction_target: [0.01, 0.02]
+
+batching:
+  target_global_tokens_per_step: 500000
+  alternative_global_tokens_per_step: 250000
+  microbatch_sequences: null
+  gradient_accumulation_steps: null
+  full_sequence_packing: true
+
+runtime:
+  use_cache: false
+  attention_backend: sdpa_or_flashattention_after_benchmark
+  torch_compile: benchmark_before_enabling
+  activation_checkpointing: enable_only_if_needed
+  non_interactive: true
+  client_disconnect_safe: true
+
+checkpoints:
+  recovery_interval_tokens_min: 100000000
+  recovery_interval_tokens_max: 250000000
+  atomic_local_write: true
+  sha256_required: true
+  asynchronous_s3_sync: true
+  verified_external_recovery_required: true
+  restore_optimizer: true
+  restore_scheduler: true
+  restore_rng: true
+  restore_data_position: true
+
+milestones_tokens:
+  - 100000000
+  - 1000000000
+  - 5000000000
+  - 10000000000
+  - 20000000000
+  - 30000000000
+  - 40000000000
+
+conditional_extension_tokens: 50000000000

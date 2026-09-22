@@ -97,6 +97,8 @@ files = [
   "scripts/capture_environment.py",
   "scripts/benchmark_cpu_inference.py",
   "scripts/check_model_cards.py",
+  "scripts/validate_echelon_1b.py",
+  "scripts/echelon_run_status.py",
 ]
 strict = true
 warn_unreachable = true

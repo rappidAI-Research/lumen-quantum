@@ -10,11 +10,12 @@ the incompatible older pilot hash
 
 ## Echelon tokenizer
 
-The Echelon configuration targets SentencePiece BPE, 32,768 vocabulary entries,
-byte fallback, identity normalization, and explicit special-token IDs. The
-tracked validation report contains 23 round-trip cases with zero failures. The
-tracked checksum record lists the locally produced model and vocabulary, but
-those binaries are ignored and not licensed for redistribution here.
+The retained historical Echelon tokenizer targets SentencePiece BPE with 32,768
+entries and has tracked round-trip/checksum evidence. For the strategic 1B path,
+32K and 48K candidates are explicitly versioned under `configs/echelon/1b/`.
+Neither is frozen or claimed trained. The production tokenizer is selected only
+after German/English/Code/Math fertility, byte fallback, round-trip behavior and
+checksums are compared on a representative sample of the planned final mix.
 
 ## Release requirements
 

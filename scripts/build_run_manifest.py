@@ -23,7 +23,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "schemas" / "run-manifest.schema.json"
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"
 PROVENANCE_REQUIRED = (
     "model_line",
     "code_revision",
@@ -191,6 +191,8 @@ def build_manifest(
         "model": {"artifact_revision": None, "checksum": None},
         "tokenizer": {"revision": None, "checksum": None},
         "artifacts": _record_artifacts(artifacts or []),
+        "cloud": None,
+        "interruptions": [],
         "hardware": {
             "machine": platform.machine(),
             "processor": platform.processor() or None,

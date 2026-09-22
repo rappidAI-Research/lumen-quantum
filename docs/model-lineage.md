@@ -12,10 +12,12 @@ experimental stage, not proof of a generally capable model.
 
 ## Strategic Echelon line
 
-`quantum-1-echelon` is the current strategic model line. Echelon Base is the
-base-pretraining stage; Echelon Chat is a possible later adaptation stage. They
-are variants/stages of one family and must not be listed as independent model
-families.
+`quantum-1-echelon` is the current strategic model line; its public model name is
+**Quantum 1 Echelon**. Base is the from-scratch pretraining stage and Chat is the
+required project endpoint after supervised and preference post-training. They are
+stages of one family and must not be listed as independent model families. The
+earlier 506M configuration remains historical preflight evidence; the strategic
+production target is now approximately 1B parameters.
 
 The checked-in Echelon path configuration forbids reuse of pilot models,
 tokenizers, and data for the current from-scratch design. Future changes to that

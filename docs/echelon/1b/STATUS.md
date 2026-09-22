@@ -1,0 +1,49 @@
+# Quantum 1 Echelon 1B status
+
+This file is the short operational control record for the current `quantum-1-echelon`
+work. It does not replace run manifests or raw evidence.
+
+## Current phase
+
+**Phase 0 — architecture/tokenizer/data-source freeze: IN PROGRESS**
+
+No 1B production dataset, paid GPU run, Base checkpoint, SFT checkpoint or
+preference-trained checkpoint exists yet.
+
+## Fixed project constraints
+
+- Public model name: **Quantum 1 Echelon**.
+- Technical model line / codename: `quantum-1-echelon`.
+- End product: a useful Chat-stage model; Base is a required intermediate stage.
+- AWS promotional-credit ceiling: **$1,140**; no private overage is planned.
+- Base target: **40B high-quality tokens**; 50B is conditional only.
+- Context: 4,096 for Base pretraining.
+- Precision: BF16 for the first production path.
+- Preferred compute class: 1x H100 80 GB (`p5.4xlarge`), subject to quota,
+  capacity, current pricing and calibration.
+- Production execution must be unattended and client-disconnect-safe.
+
+## AWS readiness
+
+- Credit expiry: confirmed by the maintainer to be in 2027.
+- AWS cost monitoring: configured by the maintainer.
+- P-family GPU quota increases: requested in multiple US regions; approval and
+  actual capacity are not yet recorded as verified repository evidence.
+- No EC2 GPU instance, production S3 bucket or paid training workload is claimed
+  by this file.
+
+## Open decisions before freeze
+
+1. 32K/21-layer vs 48K/20-layer tokenizer/model candidate.
+2. RoPE base after a bounded local/cheap ablation.
+3. Exact immutable revisions and rights/terms review for every Garden v2 source.
+4. Final Base learning-rate schedule after the short LR sweep.
+5. Final SFT and preference datasets/hyperparameters after Base evaluation.
+6. AWS region and Spot/On-Demand choice after quota, capacity and price checks.
+
+## Next action
+
+Build and validate the 1B planning/configuration baseline, then implement the
+production shard loader, exact data-position resume, unattended AWS launcher,
+checkpoint-to-S3 recovery path and CPU-safe SFT/DPO smoke path before any large
+H100 session is allowed.

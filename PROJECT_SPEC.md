@@ -14,9 +14,11 @@ research-index surface.
   legacy paths and source identifiers.
 - **Pilot stages:** `quantum-1-pilot` and `quantum-1.6-pilot` are independently
   pretrained experimental stages in the historical pilot line.
-- **Strategic line:** `quantum-1-echelon` is the current strategic model line.
-- **Echelon stages:** Echelon Base and Echelon Chat are variants or stages within
-  that line, not separate families.
+- **Strategic line:** `quantum-1-echelon` is the current strategic model line;
+  public name: **Quantum 1 Echelon**.
+- **Echelon stages:** Base and Chat are stages within that line, not separate
+  families. The current end product is the Chat stage; Base is a required
+  intermediate checkpoint.
 
 Repository, file, and public-model renames require a separate compatibility and
 redirect plan.

@@ -23,61 +23,222 @@
     "verification_status"
   ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "generated_at": { "type": ["string", "null"] },
-    "tool": { "type": ["string", "null"] },
+    "schema_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tool": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "code": {
       "type": "object",
       "properties": {
-        "revision": { "type": ["string", "null"] },
-        "branch": { "type": ["string", "null"] },
-        "dirty": { "type": ["boolean", "null"] }
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
       }
     },
-    "configuration_files": { "type": "array" },
-    "python": { "type": ["object", "null"] },
-    "platform": { "type": ["object", "null"] },
-    "dependencies": { "type": ["object", "null"] },
-    "seeds": { "type": ["integer", "array", "null"] },
+    "configuration_files": {
+      "type": "array"
+    },
+    "python": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "platform": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "dependencies": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "seeds": {
+      "type": [
+        "integer",
+        "array",
+        "null"
+      ]
+    },
     "dataset": {
       "type": "object",
       "properties": {
-        "id": { "type": ["string", "null"] },
-        "subset": { "type": ["string", "null"] },
-        "revision": { "type": ["string", "null"] }
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subset": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "model": {
       "type": "object",
       "properties": {
-        "artifact_revision": { "type": ["string", "null"] },
-        "checksum": { "type": ["string", "null"] }
+        "artifact_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checksum": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "tokenizer": {
       "type": "object",
       "properties": {
-        "revision": { "type": ["string", "null"] },
-        "checksum": { "type": ["string", "null"] }
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checksum": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
-    "artifacts": { "type": "array" },
-    "hardware": { "type": ["object", "null"] },
+    "artifacts": {
+      "type": "array"
+    },
+    "hardware": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
     "timing": {
       "type": "object",
       "properties": {
-        "started_at": { "type": ["string", "null"] },
-        "finished_at": { "type": ["string", "null"] }
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "finished_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "completion_status": {
       "type": "string",
-      "enum": ["metadata-only", "completed", "failed", "incomplete", "unknown"]
+      "enum": [
+        "metadata-only",
+        "completed",
+        "failed",
+        "incomplete",
+        "unknown"
+      ]
     },
-    "error_status": { "type": ["string", "null"] },
+    "error_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "verification_status": {
       "type": "string",
-      "enum": ["unknown", "partial", "publisher-reported", "configured-target", "not-yet-completed", "verified"]
+      "enum": [
+        "unknown",
+        "partial",
+        "publisher-reported",
+        "configured-target",
+        "not-yet-completed",
+        "verified"
+      ]
+    },
+    "cloud": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instance_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "purchase_option": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "price_snapshot_usd_per_hour": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "interruptions": {
+      "type": "array"
     }
   }
 }

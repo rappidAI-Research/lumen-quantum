@@ -16,10 +16,13 @@ per optimizer step; they are not proof of a completed run.
 
 ## Echelon
 
-Echelon Base is a configured 506,333,440-parameter causal decoder. No production
-dataset or trained checkpoint is public. Echelon Chat is a future stage inside
-the same model line. The [compute plan](compute-plan.md) records storage, memory,
-hardware options and the data/recipe/measurement gates before any training run.
+The retained 506,333,440-parameter configuration is historical preflight
+evidence, not the current production target. The strategic 1B path is versioned
+under [`echelon/1b/`](echelon/1b/README.md): approximately 1B parameters, 4K
+Base context, a fixed 40B-token Base target and mandatory Chat-stage SFT plus
+preference evaluation. No 1B production dataset or trained checkpoint exists yet.
+Paid production training is blocked until exact shard/data-position resume,
+external recovery and unattended client-disconnect-safe execution are proven.
 
 ## Resume security
 
