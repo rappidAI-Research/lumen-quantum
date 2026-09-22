@@ -43,6 +43,10 @@ preference-trained checkpoint exists yet.
   resume offsets.
 - Local checkpoint integrity manifests with SHA-256 verification before remote
   recovery sync is allowed.
+- Verified private-S3 checkpoint publication that writes a recovery-valid marker
+  only after all checkpoint objects and the manifest pass remote verification.
+- Non-interactive process guard with persistent log/status, signal handling and
+  hard wall-time enforcement for server-side supervised execution.
 
 ## Open decisions before freeze
 
@@ -55,8 +59,8 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Integrate the exact-resume shard stream into a bounded Base-training smoke path,
-then implement verified checkpoint-to-S3 publication plus the server-side
-unattended launcher/systemd interface. In parallel, prepare CPU-safe SFT/DPO
-smoke fixtures. No large H100 session is allowed before those recovery and
-post-training gates are green.
+Integrate the exact-resume shard stream, checkpoint manifest, S3 publisher and
+unattended process guard into one bounded Base-training smoke path. Then add the
+systemd deployment interface and CPU-safe SFT/DPO smoke fixtures. No large H100
+session is allowed before the end-to-end recovery and post-training gates are
+green.
