@@ -8,14 +8,12 @@ wall-time ceiling and never depends on the client SSH session.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import TextIO
 
 from scripts.echelon_run_status import (
     initial_status,
