@@ -17,6 +17,7 @@ SOURCE_IDS = (
 
 
 def _write_inputs(root: Path, *, reverse: bool = False) -> dict[str, Path]:
+    root.mkdir(parents=True, exist_ok=True)
     result: dict[str, Path] = {}
     for source_id in SOURCE_IDS:
         path = root / f"{source_id}.jsonl"
@@ -60,6 +61,7 @@ def test_shared_corpus_is_independent_of_input_record_order(tmp_path: Path) -> N
     assert first["corpus"]["sha256"] == second["corpus"]["sha256"]
     assert first["selected_record_set_sha256"] == second["selected_record_set_sha256"]
     assert first["production_eligible"] is False
+    assert len(first["config"]["sha256"]) == 64
     assert sum(item["target_text_bytes"] for item in first["sources"].values()) == 1_000
     assert all(
         item["selected_text_bytes"] >= item["target_text_bytes"]
