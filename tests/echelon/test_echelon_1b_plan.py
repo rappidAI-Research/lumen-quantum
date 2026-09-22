@@ -25,7 +25,6 @@ def test_model_candidates_match_masterplan_counts() -> None:
         assert manual_parameter_count(model) == parameter_count
 
 
-
 def test_source_registry_pins_identified_candidates_without_approving_them() -> None:
     import yaml
 
