@@ -82,11 +82,16 @@ def _source_map(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _positive_share_sources(source_map: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    return {
-        source_id: item
-        for source_id, item in source_map.items()
-        if Decimal(str(item.get("target_share", 0))) > 0
-    }
+    result: dict[str, dict[str, Any]] = {}
+    for source_id, item in source_map.items():
+        share = Decimal(str(item.get("target_share", 0)))
+        if share < 0:
+            raise ValueError(f"{source_id}: target_share must not be negative")
+        if share > 0:
+            result[source_id] = item
+    if not result:
+        raise ValueError("source registry has no positive-share sources")
+    return result
 
 
 def _byte_quotas(sources: dict[str, dict[str, Any]], target_bytes: int) -> dict[str, int]:
@@ -246,7 +251,25 @@ def build_corpus(
     if config.get("project", {}).get("model_line") != "quantum-1-echelon":
         raise ValueError("wrong model_line in tokenizer corpus config")
 
-    registry_path = ROOT / str(config["sources"]["registry"])
+    source_contract = config["sources"]
+    selection = config["selection"]
+    if source_contract.get("require_all_positive_share_sources") is not True:
+        raise ValueError("tokenizer corpus config must require all positive-share sources")
+    if source_contract.get("production_requires_approval") is not True:
+        raise ValueError("tokenizer corpus config must require production source approval")
+    expected_selection = {
+        "basis": "utf8_text_bytes",
+        "exact_text_deduplication": True,
+        "stable_selection": "sha256",
+        "stable_output_order": "sha256",
+    }
+    for key, expected in expected_selection.items():
+        if selection.get(key) != expected:
+            raise ValueError(
+                f"tokenizer corpus config selection.{key}={selection.get(key)!r}; expected {expected!r}"
+            )
+
+    registry_path = ROOT / str(source_contract["registry"])
     registry = load_yaml(registry_path)
     source_map = _source_map(registry)
     active_sources = _positive_share_sources(source_map)
@@ -267,7 +290,6 @@ def build_corpus(
         if blocked:
             raise ValueError(f"production source gate is closed for: {', '.join(blocked)}")
 
-    selection = config["selection"]
     seed = str(selection["seed"])
     id_field = str(selection["record_id_field"])
     text_field = str(selection["text_field"])
@@ -314,6 +336,10 @@ def build_corpus(
         "selected_records": len(selected),
         "exact_duplicate_records_skipped": duplicates_skipped,
         "selected_record_set_sha256": _selected_ids_sha256(selected),
+        "config": {
+            "path": str(config_path),
+            "sha256": sha256_file(config_path),
+        },
         "source_registry": {
             "path": str(registry_path),
             "sha256": sha256_file(registry_path),
