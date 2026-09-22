@@ -49,6 +49,9 @@ jobs:
       - name: Validate configuration and report files
         run: python scripts/validate_repository_configs.py
 
+      - name: Quantum 1 Echelon 1B planning contract
+        run: python scripts/validate_echelon_1b.py
+
       - name: Repository health
         run: python scripts/repository_health.py
 
@@ -89,6 +92,7 @@ jobs:
           tests/test_cpu_benchmark.py
           tests/test_model_cards.py
           tests/test_examples.py
+          tests/echelon/test_echelon_1b_plan.py
           -m "unit and not slow and not gpu and not network"
 
   cpu-ml-tests:
@@ -116,6 +120,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "torch>=2.3,<3" --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -e ".[ml,dev]"
+
+      - name: Echelon 1B architecture preflight
+        run: |
+          python scripts/echelon_preflight.py --config configs/echelon/1b/model-32k.yaml --report "${RUNNER_TEMP:-/tmp}/echelon-1b-32k.json"
+          python scripts/echelon_preflight.py --config configs/echelon/1b/model-48k.yaml --report "${RUNNER_TEMP:-/tmp}/echelon-1b-48k.json"
 
       - name: Fast offline CPU tests
         run: python -m pytest -m "not slow and not gpu and not network"

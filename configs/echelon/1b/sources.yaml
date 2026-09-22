@@ -1,0 +1,60 @@
+project:
+  model_line: quantum-1-echelon
+  pipeline: garden-v2
+  status: planning
+
+sources:
+  - id: de-fineweb2-hq
+    role: german_hq_web
+    target_share: 0.65
+    dataset: epfml/FineWeb2-HQ
+    subset: deu_Latn
+    revision: c0c06e94fd3a44ae9e802b2b0fc533817601eb5e
+    review_status: partially_reviewed
+    terms_status: upstream_dataset_terms_known_source_page_rights_separate
+    removal_status: required_before_production
+    notes: Core German source. Preserve the pinned revision and existing metadata filters.
+
+  - id: en-fineweb-edu
+    role: english_education
+    target_share: 0.15
+    dataset: HuggingFaceFW/fineweb-edu
+    subset: null
+    revision: null
+    review_status: pending
+    terms_status: pending
+    removal_status: pending
+    notes: Candidate only. Freeze an immutable revision and exact subset before production.
+
+  - id: reference-knowledge
+    role: reference_knowledge
+    target_share: 0.08
+    dataset: null
+    subset: null
+    revision: null
+    review_status: pending_source_selection
+    terms_status: pending
+    removal_status: pending
+    notes: No source is approved yet. Do not silently substitute one.
+
+  - id: math-finemath
+    role: mathematics
+    target_share: 0.07
+    dataset: HuggingFaceTB/finemath
+    subset: null
+    revision: null
+    review_status: pending
+    terms_status: pending
+    removal_status: pending
+    notes: Candidate only. Prefer the highest-quality compatible subset after review.
+
+  - id: code-stack-edu
+    role: code
+    target_share: 0.05
+    dataset: HuggingFaceTB/stack-edu
+    subset: null
+    revision: null
+    review_status: pending
+    terms_status: source_repository_licenses_require_review
+    removal_status: pending
+    notes: Candidate only. Source-repository licensing and Software Heritage provenance are release gates.

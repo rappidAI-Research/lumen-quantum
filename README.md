@@ -37,7 +37,7 @@ IDs are intentionally not renamed by this change.
 |---|---|---|
 | `quantum-1-pilot` | Independently pretrained pilot stage | Experimental F16 GGUF published; reuse terms remain unresolved |
 | `quantum-1.6-pilot` | Continued-pretraining pilot stage | Experimental F16 GGUF published; publisher-reported metrics; final run manifest unavailable |
-| `quantum-1-echelon` | Current strategic model line | Architecture/tokenizer/data preflight only; no trained checkpoint released |
+| `quantum-1-echelon` | Current strategic model line | Historical 506M preflight retained; 1B architecture/tokenizer/data freeze in progress; no trained 1B checkpoint released |
 
 Echelon Base and Echelon Chat are stages or variants inside
 `quantum-1-echelon`, not separate model families. See
@@ -175,12 +175,12 @@ checksums. The repository currently has gaps for the released pilots. See
 
 ## Echelon compute planning
 
-The [compute plan](docs/compute-plan.md) connects the verified architecture,
-tokenizer and Garden smoke evidence to production data, training and evaluation
-gates. It includes memory/storage calculations, AWS hardware options and cost
-controls, but is not a completed run or cloud deployment. See the
-[AWS application readiness record](docs/applications/aws-activate-readiness.md)
-for program sources and owner checks.
+The historical [506M compute plan](docs/compute-plan.md) remains evidence for the
+earlier preflight. The current strategic 1B work is versioned under
+[`docs/echelon/1b/`](docs/echelon/1b/README.md), with a short live
+[`STATUS.md`](docs/echelon/1b/STATUS.md), 40B Base target, mandatory Chat-stage
+post-training and client-disconnect-safe AWS execution requirements. These are
+plans/gates, not evidence of completed training.
 
 ## Limitations and security
 
@@ -193,9 +193,9 @@ published reproducibly. Do not use the outputs for high-stakes decisions. Read
 
 ## Roadmap and contributing
 
-The near-term work is explicit artifact notices, stable CI, release-manifest publication,
-raw evaluation evidence, reproducible CPU measurement, and Echelon data
-preparation. See [`ROADMAP.md`](ROADMAP.md) and
+The highest-priority near-term work is the Quantum 1 Echelon 1B freeze, Garden v2,
+production shard/resume path and Chat-stage preparation, while historical pilot
+provenance/release gaps remain tracked. See [`ROADMAP.md`](ROADMAP.md) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md). This is a sole-maintainer project and no
 response time is guaranteed.
 

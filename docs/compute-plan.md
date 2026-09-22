@@ -1,4 +1,11 @@
-# Echelon compute plan
+# Echelon compute plan (historical 506M baseline)
+
+> **Strategic scope changed after this plan.** This document preserves the
+> earlier 506M compute analysis as historical evidence. The current Quantum 1
+> Echelon direction targets ~1B parameters, 4K context, a 40B Base corpus and a
+> mandatory Chat stage. Use [`echelon/1b/README.md`](echelon/1b/README.md) and
+> [`echelon/1b/STATUS.md`](echelon/1b/STATUS.md) for current execution gates; do
+> not reuse the 506M/8B cost numbers as current production estimates.
 
 Reviewed: 2026-09-18. Evidence baseline:
 `f79c395c1da82827a63706ea9b55c913c073bd91`.

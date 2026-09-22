@@ -6,6 +6,19 @@ approved release.
 
 ## Unreleased
 
+
+### Quantum 1 Echelon 1B foundation (2026-09-22)
+
+- Promote the approximately 1B-parameter Quantum 1 Echelon path to the current
+  strategic target while retaining the 506M Echelon work as historical preflight evidence.
+- Add 32K/48K tokenizer+architecture candidates, Garden v2 and Base/Chat planning
+  configs, AWS budget/runtime constraints, run-status/calibration schemas and
+  CPU-safe validators.
+- Make a useful Chat-stage model the required project endpoint rather than treating
+  the Base checkpoint as completion.
+- Require exact data-position resume, verified external checkpoints and
+  client-disconnect-safe unattended execution before substantial paid H100 training.
+
 ### Readiness documentation (2026-09-18)
 
 - Add an evidence-linked Echelon compute plan and AWS Activate readiness record.

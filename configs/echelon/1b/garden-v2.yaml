@@ -1,0 +1,61 @@
+project:
+  model_line: quantum-1-echelon
+  stage: base
+  pipeline: garden-v2
+  seed: 20260718
+  status: planning
+
+inputs:
+  source_registry: configs/echelon/1b/sources.yaml
+  tokenizer_candidate: null
+  tokenizer_checksum: null
+
+mix:
+  german_hq_web: 0.65
+  english_education: 0.15
+  reference_knowledge: 0.08
+  mathematics: 0.07
+  code: 0.05
+
+targets:
+  train_tokens: 40000000000
+  conditional_stretch_train_tokens: 50000000000
+  validation_tokens: 50000000
+  test_tokens: 50000000
+  context_length: 4096
+  token_dtype: uint16
+  tokens_per_shard: 100000000
+
+pipeline:
+  stream_sources: true
+  project_required_columns_early: true
+  language_filtering: true
+  quality_filtering: true
+  pii_sensitive_filtering: true
+  exact_deduplication: true
+  near_duplicate_policy: source_specific_and_documented
+  benchmark_decontamination: true
+  stable_splits: true
+  pack_full_context_sequences: true
+  manifests_required: true
+  shard_checksums_required: true
+
+splits:
+  method: stable_sha256_hash
+  train_fraction: 0.9975
+  validation_fraction: 0.00125
+  test_fraction: 0.00125
+
+storage:
+  canonical_shards: private_s3
+  active_cache: instance_nvme
+  minimum_nvme_free_gb_before_training: 300
+  expected_40b_token_payload_gb_decimal: 80
+  expected_50b_token_payload_gb_decimal: 100
+  retain_raw_sources_by_default: false
+
+output:
+  root: data/echelon/1b/garden-v2
+  manifest: data/echelon/1b/garden-v2/manifests/garden-v2.json
+  shard_directory: data/echelon/1b/garden-v2/shards
+  decontamination_report: reports/quantum-1-echelon/1b/decontamination.json

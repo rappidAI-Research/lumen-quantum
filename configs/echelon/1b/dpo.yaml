@@ -1,0 +1,34 @@
+project:
+  model_line: quantum-1-echelon
+  stage: chat_preference
+  status: planning
+
+input_model:
+  sft_checkpoint: null
+  tokenizer_checksum: null
+
+preference_data:
+  registry: null
+  provenance_required: true
+  terms_review_required: true
+  synthetic_teacher_must_be_recorded: true
+  held_out_evaluation_required: true
+
+training:
+  method: dpo
+  hyperparameters_status: pending_sft_evaluation
+  precision: bf16
+  non_interactive: true
+
+quality_dimensions:
+  - helpfulness
+  - german_language_quality
+  - instruction_following
+  - formatting
+  - mathematics
+  - code
+  - bounded_safety_behavior
+
+release_gate:
+  compare_against_sft: true
+  discard_preference_checkpoint_if_worse: true

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rappidAI-Research/lumen-quantum/schemas/echelon-run-status.schema.json",
+  "title": "Quantum 1 Echelon unattended run status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "state",
+    "updated_at",
+    "step",
+    "processed_tokens",
+    "last_checkpoint",
+    "last_verified_s3_sync",
+    "message"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "state": {
+      "enum": ["RUNNING", "CHECKPOINTING", "INTERRUPTED", "FAILED", "COMPLETED"]
+    },
+    "updated_at": { "type": "string" },
+    "step": { "type": "integer", "minimum": 0 },
+    "processed_tokens": { "type": "integer", "minimum": 0 },
+    "last_checkpoint": { "type": ["string", "null"] },
+    "last_verified_s3_sync": { "type": ["string", "null"] },
+    "message": { "type": ["string", "null"] }
+  }
+}

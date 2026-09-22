@@ -1,0 +1,51 @@
+project:
+  model_line: quantum-1-echelon
+  status: planning
+
+budget:
+  promotional_credits_usd: 1140
+  planned_data_cpu_storage_usd: 80
+  planned_base_usd: 740
+  protected_chat_usd: 140
+  protected_reserve_usd: 180
+  private_overage_allowed: false
+
+compute:
+  preferred_instance_type: p5.4xlarge
+  accelerator: NVIDIA H100 80GB
+  gpu_count: 1
+  purchase_strategy: spot_after_resume_gate
+  region: null
+  availability_zone: null
+  quota_status: pending
+  large_cluster_required: false
+
+execution:
+  supervisor: systemd
+  tmux_role: optional_observation_only
+  non_interactive: true
+  client_disconnect_safe: true
+  persistent_logs: true
+  machine_readable_status: true
+  resume_latest_required: true
+  shutdown_on_success: true
+  shutdown_on_failure: true
+  idle_watchdog_required: true
+
+storage:
+  source_of_truth: private_s3
+  active_cache: local_nvme
+  s3_bucket: null
+  s3_prefix: null
+  public_access: false
+  encryption_required: true
+  local_checkpoint_then_sync: true
+  asynchronous_sync: true
+  retry_with_backoff: true
+
+pricing:
+  snapshot_required_before_paid_run: true
+  spot_price_usd_per_hour: null
+  ondemand_price_usd_per_hour: null
+  measured_tokens_per_second: null
+  projected_cost_per_billion_tokens_usd: null
