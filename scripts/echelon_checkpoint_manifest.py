@@ -11,7 +11,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 SCHEMA_VERSION = "1.0.0"
 DEFAULT_EXCLUDES = {"checkpoint-manifest.json"}
 
