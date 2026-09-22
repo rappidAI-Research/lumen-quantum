@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
-from scripts.echelon_checkpoint_manifest import sha256_file, verify_manifest
+from scripts.echelon_checkpoint_manifest import verify_manifest
 
 
 class S3Client(Protocol):
