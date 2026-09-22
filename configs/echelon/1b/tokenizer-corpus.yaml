@@ -1,0 +1,29 @@
+project:
+  model_line: quantum-1-echelon
+  purpose: shared-tokenizer-ab-corpus
+  status: planning
+
+sources:
+  registry: configs/echelon/1b/sources.yaml
+  require_all_positive_share_sources: true
+  production_requires_approval: true
+
+selection:
+  basis: utf8_text_bytes
+  seed: quantum-1-echelon-tokenizer-corpus-v1
+  record_id_field: id
+  text_field: text
+  exact_text_deduplication: true
+  stable_selection: sha256
+  stable_output_order: sha256
+
+target:
+  production_token_range_min: 50000000
+  production_token_range_max: 100000000
+  token_count_validation: after_both_candidate_tokenizers_exist
+  target_utf8_bytes: runtime_required
+
+output:
+  corpus_filename: shared-tokenizer-corpus.txt
+  manifest_filename: shared-tokenizer-corpus-manifest.json
+  schema_version: 1.0.0
