@@ -38,7 +38,6 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
     assert {"de", "en", "code", "math"}.issubset({record["domain"] for record in records})
 
 
-
 def test_piece_surface_byte_metric_handles_metaspace_and_byte_fallback() -> None:
     assert _piece_surface_bytes("<0xC3>") == 1
     assert _piece_surface_bytes("▁Straße") == len(" Straße".encode("utf-8"))
