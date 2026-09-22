@@ -31,6 +31,18 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
     assert {"de", "en", "code", "math"}.issubset({record["domain"] for record in records})
 
 
+
+def test_candidate_configs_match_report_metric_contract() -> None:
+    import yaml
+
+    for name in ("tokenizer-32k.yaml", "tokenizer-48k.yaml"):
+        config_path = Path("configs/echelon/1b") / name
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        metrics = config["evaluation"]["metrics"]
+        assert "tokens_per_word" in metrics
+        assert "words_per_token" not in metrics
+
+
 def test_compare_requires_identical_training_corpus() -> None:
     with pytest.raises(ValueError, match="same training corpus"):
         compare_reports(
