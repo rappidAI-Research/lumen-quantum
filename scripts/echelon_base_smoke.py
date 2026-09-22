@@ -14,7 +14,7 @@ from typing import Any
 
 import torch
 import yaml
-from safetensors.torch import load_file, save_file
+from safetensors.torch import load_model, save_model
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 from transformers import LlamaForCausalLM
@@ -43,10 +43,12 @@ def save_checkpoint(
     run_id: str,
 ) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
-    save_file(model.state_dict(), str(directory / "model.safetensors"))
+    save_model(model, str(directory / "model.safetensors"))
     torch.save(optimizer.state_dict(), directory / "optimizer.pt")
     torch.save(scheduler.state_dict(), directory / "scheduler.pt")
     torch.save(torch.get_rng_state(), directory / "torch_rng.pt")
+    if torch.cuda.is_available():
+        torch.save(torch.cuda.get_rng_state_all(), directory / "cuda_rng.pt")
     state = {
         "schema_version": "1.0.0",
         "model_line": "quantum-1-echelon",
@@ -77,7 +79,7 @@ def restore_checkpoint(
     scheduler: LambdaLR,
 ) -> dict[str, Any]:
     state = json.loads((directory / "trainer_state.json").read_text(encoding="utf-8"))
-    model.load_state_dict(load_file(str(directory / "model.safetensors")))
+    load_model(model, str(directory / "model.safetensors"), strict=True)
     optimizer.load_state_dict(torch.load(directory / "optimizer.pt", weights_only=True))
     scheduler.load_state_dict(torch.load(directory / "scheduler.pt", weights_only=True))
     torch.set_rng_state(torch.load(directory / "torch_rng.pt", weights_only=True))
