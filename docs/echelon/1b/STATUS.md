@@ -38,9 +38,11 @@ preference-trained checkpoint exists yet.
 - Reproducible 32K/48K tokenizer A/B tooling plus a deterministic, network-free
   shared-corpus assembler. The assembler uses candidate-independent UTF-8 byte
   quotas, stable hash selection/order, exact-text deduplication and a manifest
-  that binds input/source-registry/output hashes. Production mode refuses any
-  source whose registry approval gate is closed. The real shared production
-  corpus is not assembled yet and no candidate is frozen.
+  that binds config/input/source-registry/output hashes. Tokenizer evaluation
+  now also records domain metrics plus token-piece long-tail p50/p95/p99/max and
+  >=8-byte rates. Production mode refuses any source whose registry approval
+  gate is closed. The real shared production corpus is not assembled yet and no
+  candidate is frozen.
 - Garden v2 planning plus a machine-readable source-readiness gate. Immutable
   candidate revisions and public terms/provenance evidence are captured for
   FineWeb2-HQ, FineWeb-Edu, FineMath-4+ and Stack-Edu, while every source remains
@@ -76,9 +78,10 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Next, complete the tokenizer evaluation contract (including long-token-tail
-evidence), then assemble and evaluate the real shared 32K/48K corpus once the
-necessary source approvals/data are available. In parallel, implement
-production chat-data validators and keep the bounded disconnect/recovery
-acceptance path ready. No large H100 session is allowed before recovery,
-tokenizer, source-review and post-training gates are green.
+Next, implement production SFT/preference data validators and manifests while
+the real shared 32K/48K tokenizer corpus remains blocked on source approvals and
+staged production data. After source approval, assemble the identical shared
+corpus and run the tokenizer A/B evidence before freezing one architecture.
+Keep the bounded disconnect/recovery acceptance path ready. No large H100
+session is allowed before recovery, tokenizer, source-review and post-training
+gates are green.
