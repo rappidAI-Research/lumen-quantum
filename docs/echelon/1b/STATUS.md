@@ -35,10 +35,14 @@ preference-trained checkpoint exists yet.
 ## Implemented foundation
 
 - 32K/21-layer and 48K/20-layer approximately-1B architecture candidates.
-- Reproducible 32K/48K tokenizer A/B tooling with one shared-corpus identity,
-  artifact/config SHA-256 manifests, reserved special-token ID checks, fixed
-  domain-tagged evaluation evidence and comparison reports. The real shared
-  production tokenizer corpus is not assembled yet and no candidate is frozen.
+- Reproducible 32K/48K tokenizer A/B tooling plus a deterministic, network-free
+  shared-corpus assembler. The assembler uses candidate-independent UTF-8 byte
+  quotas, stable hash selection/order, exact-text deduplication and a manifest
+  that binds config/input/source-registry/output hashes. Tokenizer evaluation
+  now also records domain metrics plus token-piece long-tail p50/p95/p99/max and
+  >=8-byte rates. Production mode refuses any source whose registry approval
+  gate is closed. The real shared production corpus is not assembled yet and no
+  candidate is frozen.
 - Garden v2 planning plus a machine-readable source-readiness gate. Immutable
   candidate revisions and public terms/provenance evidence are captured for
   FineWeb2-HQ, FineWeb-Edu, FineMath-4+ and Stack-Edu, while every source remains
@@ -74,11 +78,10 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Next, implement the deterministic shared tokenizer-corpus assembler so both
-32K/48K candidates can consume identical approved source bytes, including a
-production mode that refuses any source whose registry gate is still closed.
-Then complete the real tokenizer A/B evidence once the necessary source
-approvals/data are available. In parallel, keep production chat-data validation
-and the bounded disconnect/recovery acceptance path ready. No large H100 session
-is allowed before recovery, tokenizer, source-review and post-training gates are
-green.
+Next, implement production SFT/preference data validators and manifests while
+the real shared 32K/48K tokenizer corpus remains blocked on source approvals and
+staged production data. After source approval, assemble the identical shared
+corpus and run the tokenizer A/B evidence before freezing one architecture.
+Keep the bounded disconnect/recovery acceptance path ready. No large H100
+session is allowed before recovery, tokenizer, source-review and post-training
+gates are green.

@@ -38,6 +38,9 @@ evaluation:
     - characters_per_token
     - tokens_per_word
     - byte_fallback_rate
+    - piece_surface_bytes_p95
+    - piece_surface_bytes_p99
+    - long_piece_rate_ge_8_bytes
     - roundtrip_failures
 
 output:

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -185,7 +186,21 @@ def load_eval_records(path: Path) -> list[dict[str, str]]:
     return records
 
 
-def _record_metrics(processor: Any, text: str) -> dict[str, int]:
+def _piece_surface_bytes(piece: str) -> int:
+    if BYTE_PIECE.fullmatch(piece):
+        return 1
+    return len(piece.replace("▁", " ").encode("utf-8"))
+
+
+def _nearest_rank(values: list[int], quantile: float) -> int:
+    if not values:
+        return 0
+    ordered = sorted(values)
+    index = max(0, math.ceil(quantile * len(ordered)) - 1)
+    return ordered[index]
+
+
+def _record_metrics(processor: Any, text: str) -> dict[str, Any]:
     ids = processor.encode(text, out_type=int)
     pieces = processor.encode(text, out_type=str)
     decoded = processor.decode(ids)
@@ -197,10 +212,11 @@ def _record_metrics(processor: Any, text: str) -> dict[str, int]:
         "tokens": len(ids),
         "byte_fallback_tokens": sum(bool(BYTE_PIECE.fullmatch(piece)) for piece in pieces),
         "roundtrip_failure": int(decoded != text),
+        "piece_surface_bytes": [_piece_surface_bytes(piece) for piece in pieces],
     }
 
 
-def _summarize(items: list[dict[str, int]]) -> dict[str, Any]:
+def _summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
     totals = {
         key: sum(item[key] for item in items)
         for key in (
@@ -214,6 +230,10 @@ def _summarize(items: list[dict[str, int]]) -> dict[str, Any]:
     }
     token_count = max(totals["tokens"], 1)
     word_count = max(totals["words"], 1)
+    piece_surface_bytes = [
+        int(length) for item in items for length in item.get("piece_surface_bytes", [])
+    ]
+    long_pieces = sum(length >= 8 for length in piece_surface_bytes)
     return {
         **totals,
         "bytes_per_token": totals["bytes"] / token_count,
@@ -221,6 +241,11 @@ def _summarize(items: list[dict[str, int]]) -> dict[str, Any]:
         "tokens_per_word": totals["tokens"] / word_count,
         "byte_fallback_rate": totals["byte_fallback_tokens"] / token_count,
         "roundtrip_failures": totals["roundtrip_failure"],
+        "piece_surface_bytes_p50": _nearest_rank(piece_surface_bytes, 0.50),
+        "piece_surface_bytes_p95": _nearest_rank(piece_surface_bytes, 0.95),
+        "piece_surface_bytes_p99": _nearest_rank(piece_surface_bytes, 0.99),
+        "piece_surface_bytes_max": max(piece_surface_bytes, default=0),
+        "long_piece_rate_ge_8_bytes": long_pieces / token_count,
     }
 
 
@@ -291,6 +316,11 @@ def compare_reports(report_a: dict[str, Any], report_b: dict[str, Any]) -> dict[
             "bytes_per_token_b_minus_a": delta("bytes_per_token", left, right),
             "characters_per_token_b_minus_a": delta("characters_per_token", left, right),
             "byte_fallback_rate_b_minus_a": delta("byte_fallback_rate", left, right),
+            "piece_surface_bytes_p95_b_minus_a": delta("piece_surface_bytes_p95", left, right),
+            "piece_surface_bytes_p99_b_minus_a": delta("piece_surface_bytes_p99", left, right),
+            "long_piece_rate_ge_8_bytes_b_minus_a": delta(
+                "long_piece_rate_ge_8_bytes", left, right
+            ),
             "roundtrip_failures_a": int(left["roundtrip_failures"]),
             "roundtrip_failures_b": int(right["roundtrip_failures"]),
         }
@@ -314,6 +344,15 @@ def compare_reports(report_a: dict[str, Any], report_b: dict[str, Any]) -> dict[
             ),
             "byte_fallback_rate_b_minus_a": delta(
                 "byte_fallback_rate", report_a["overall"], report_b["overall"]
+            ),
+            "piece_surface_bytes_p95_b_minus_a": delta(
+                "piece_surface_bytes_p95", report_a["overall"], report_b["overall"]
+            ),
+            "piece_surface_bytes_p99_b_minus_a": delta(
+                "piece_surface_bytes_p99", report_a["overall"], report_b["overall"]
+            ),
+            "long_piece_rate_ge_8_bytes_b_minus_a": delta(
+                "long_piece_rate_ge_8_bytes", report_a["overall"], report_b["overall"]
             ),
             "roundtrip_failures_a": int(report_a["overall"]["roundtrip_failures"]),
             "roundtrip_failures_b": int(report_b["overall"]["roundtrip_failures"]),
