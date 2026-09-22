@@ -35,8 +35,11 @@ preference-trained checkpoint exists yet.
 ## Implemented foundation
 
 - 32K/21-layer and 48K/20-layer approximately-1B architecture candidates.
-- Tokenizer A/B planning, Garden v2 planning, source registry and Base/SFT/DPO
-  execution contracts.
+- Reproducible 32K/48K tokenizer A/B tooling with one shared-corpus identity,
+  artifact/config SHA-256 manifests, reserved special-token ID checks, fixed
+  domain-tagged evaluation evidence and comparison reports. The real shared
+  production tokenizer corpus is not assembled yet and no candidate is frozen.
+- Garden v2 planning, source registry and Base/SFT/DPO execution contracts.
 - AWS runtime/budget contract and unattended-operation runbook.
 - Machine-readable run status with atomic updates.
 - Deterministic memory-mapped uint16 shard stream with exact sequence-aligned
@@ -65,8 +68,9 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Run the first end-to-end supervised disconnect/recovery acceptance test once
-bounded AWS capacity is available, and in parallel implement production chat-data
-validators plus the tokenizer A/B corpus/evaluation pipeline. No large H100
-session is allowed before recovery, tokenizer, source-review and post-training
-gates are green.
+Next, harden the Garden v2 source registry with immutable revision/provenance
+evidence and explicit unresolved rights/removal gates, then implement the
+deterministic shared tokenizer-corpus assembler and complete the real 32K/48K
+A/B evidence. In parallel, keep production chat-data validation and the bounded
+disconnect/recovery acceptance path ready. No large H100 session is allowed
+before recovery, tokenizer, source-review and post-training gates are green.
