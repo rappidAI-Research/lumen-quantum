@@ -32,6 +32,18 @@ preference-trained checkpoint exists yet.
 - No EC2 GPU instance, production S3 bucket or paid training workload is claimed
   by this file.
 
+## Implemented foundation
+
+- 32K/21-layer and 48K/20-layer approximately-1B architecture candidates.
+- Tokenizer A/B planning, Garden v2 planning, source registry and Base/SFT/DPO
+  execution contracts.
+- AWS runtime/budget contract and unattended-operation runbook.
+- Machine-readable run status with atomic updates.
+- Deterministic memory-mapped uint16 shard stream with exact sequence-aligned
+  resume offsets.
+- Local checkpoint integrity manifests with SHA-256 verification before remote
+  recovery sync is allowed.
+
 ## Open decisions before freeze
 
 1. 32K/21-layer vs 48K/20-layer tokenizer/model candidate.
@@ -43,7 +55,8 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Build and validate the 1B planning/configuration baseline, then implement the
-production shard loader, exact data-position resume, unattended AWS launcher,
-checkpoint-to-S3 recovery path and CPU-safe SFT/DPO smoke path before any large
-H100 session is allowed.
+Integrate the exact-resume shard stream into a bounded Base-training smoke path,
+then implement verified checkpoint-to-S3 publication plus the server-side
+unattended launcher/systemd interface. In parallel, prepare CPU-safe SFT/DPO
+smoke fixtures. No large H100 session is allowed before those recovery and
+post-training gates are green.
