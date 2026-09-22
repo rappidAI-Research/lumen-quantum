@@ -18,7 +18,6 @@ from typing import Any
 import sentencepiece as spm
 import yaml
 
-
 BYTE_PIECE = re.compile(r"^<0x[0-9A-Fa-f]{2}>$")
 
 
