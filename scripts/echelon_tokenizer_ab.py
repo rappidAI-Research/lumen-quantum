@@ -119,10 +119,21 @@ def train_candidate(config_path: Path, corpus_path: Path) -> dict[str, Any]:
         if int(actual) != int(expected[key]):
             raise RuntimeError(f"{key}: trained={actual}, expected={expected[key]}")
 
-    for symbol in _special_symbols(config):
+    reserved_token_ids = dict(id_checks)
+    reserved_symbols = {
+        "system_token_id": str(special["system_token"]),
+        "user_token_id": str(special["user_token"]),
+        "assistant_token_id": str(special["assistant_token"]),
+        "end_token_id": str(special["end_token"]),
+    }
+    for key, symbol in reserved_symbols.items():
         token_id = int(processor.piece_to_id(symbol))
         if token_id < 0 or token_id == int(processor.unk_id()):
             raise RuntimeError(f"missing user-defined symbol: {symbol}")
+        reserved_token_ids[key] = token_id
+
+    if len(set(reserved_token_ids.values())) != len(reserved_token_ids):
+        raise RuntimeError("reserved special-token IDs must be unique")
 
     manifest = {
         "schema_version": "1.0.0",
@@ -144,7 +155,7 @@ def train_candidate(config_path: Path, corpus_path: Path) -> dict[str, Any]:
             "bytes": vocab_path.stat().st_size,
             "sha256": sha256_file(vocab_path),
         },
-        "special_token_ids": id_checks,
+        "special_token_ids": reserved_token_ids,
     }
     manifest_path = output_dir / "tokenizer-manifest.json"
     manifest_path.write_text(
