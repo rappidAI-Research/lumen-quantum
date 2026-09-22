@@ -48,6 +48,10 @@ Implemented building blocks now include:
   `_RECOVERY_VALID.json` last.
 - `scripts/echelon_shard_stream.py`: memory-mapped uint16 token stream with an
   exact sequence-aligned global resume offset.
+- `scripts/echelon_systemd_entrypoint.py` plus
+  `ops/systemd/quantum-1-echelon@.service`: fixed server-side lifecycle
+  interface with strict JSON argv parsing and no shell evaluation. See
+  [SYSTEMD.md](SYSTEMD.md).
 
 The final Base trainer still has to wire these components together before the
 large paid run.
