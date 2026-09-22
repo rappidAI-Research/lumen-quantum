@@ -2,10 +2,10 @@
 
 ## Status
 
-In development. **Quantum 1 Echelon** is the current strategic model line. The
-repository is now preparing a new approximately 1B-parameter Base stage followed
-by a required Chat stage. No 1B production dataset, trained checkpoint, GGUF,
-capability evaluation or model-weight license exists yet.
+In development. **Quantum 1 Echelon** is the current strategic model line. This
+is not a trained model card. The repository is preparing a new approximately
+1B-parameter Base stage followed by a required Chat stage. No checkpoint, 1B
+production dataset, GGUF, capability evaluation or model-weight license exists yet.
 
 The earlier 506M Echelon architecture/tokenizer/Garden work is retained as
 historical preflight evidence. It is not presented as the final production
