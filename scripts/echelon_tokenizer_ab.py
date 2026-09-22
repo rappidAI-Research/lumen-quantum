@@ -249,10 +249,7 @@ def evaluate_candidate(
             "records": len(records),
         },
         "overall": _summarize(all_items),
-        "domains": {
-            domain: _summarize(items)
-            for domain, items in sorted(grouped.items())
-        },
+        "domains": {domain: _summarize(items) for domain, items in sorted(grouped.items())},
     }
 
 
