@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rappidAI-Research/lumen-quantum/schemas/echelon-shard-manifest.schema.json",
+  "title": "Quantum 1 Echelon token-shard manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_line",
+    "split",
+    "token_dtype",
+    "context_length",
+    "total_tokens",
+    "shards"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "model_line": { "const": "quantum-1-echelon" },
+    "split": { "enum": ["train", "validation", "test"] },
+    "token_dtype": { "const": "uint16" },
+    "context_length": { "type": "integer", "minimum": 1 },
+    "total_tokens": { "type": "integer", "minimum": 1 },
+    "shards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "tokens", "bytes", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "tokens": { "type": "integer", "minimum": 1 },
+          "bytes": { "type": "integer", "minimum": 2 },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}
