@@ -12,12 +12,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator, cast
+from typing import Any, cast
 
 import numpy as np
-
 
 SCHEMA_VERSION = "1.0.0"
 
