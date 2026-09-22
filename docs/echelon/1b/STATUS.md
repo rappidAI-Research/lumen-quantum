@@ -47,6 +47,10 @@ preference-trained checkpoint exists yet.
   only after all checkpoint objects and the manifest pass remote verification.
 - Non-interactive process guard with persistent log/status, signal handling and
   hard wall-time enforcement for server-side supervised execution.
+- Bounded Base-training smoke path that exercises model/optimizer/scheduler/RNG
+  checkpoints and resumes the exact token offset from canonical uint16 shards.
+- CPU-safe SFT and DPO optimization smokes that prove post-training mechanics
+  without pretending synthetic test tokens are production chat data.
 
 ## Open decisions before freeze
 
@@ -59,8 +63,8 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Integrate the exact-resume shard stream, checkpoint manifest, S3 publisher and
-unattended process guard into one bounded Base-training smoke path. Then add the
-systemd deployment interface and CPU-safe SFT/DPO smoke fixtures. No large H100
-session is allowed before the end-to-end recovery and post-training gates are
-green.
+Add the systemd deployment interface and wire the unattended guard, Base smoke,
+checkpoint integrity and S3 publisher into one end-to-end disconnect/recovery
+fixture. Then implement production chat-data validators and freeze the tokenizer
+A/B experiment inputs. No large H100 session is allowed before those recovery,
+data and post-training gates are green.

@@ -1,0 +1,38 @@
+project:
+  model_line: quantum-1-echelon
+  stage: test_only
+  status: smoke
+  seed: 20260922
+
+model:
+  model_name: quantum-1-echelon-smoke
+  architecture: llama_causal_decoder
+  vocab_size: 256
+  context_length: 16
+  hidden_size: 64
+  intermediate_size: 128
+  num_hidden_layers: 2
+  num_attention_heads: 4
+  num_key_value_heads: 2
+  hidden_act: silu
+  rms_norm_eps: 1.0e-5
+  rope_theta: 10000.0
+  attention_bias: false
+  mlp_bias: false
+  tie_word_embeddings: true
+  initializer_range: 0.02
+  use_cache: false
+  dtype_target: fp32
+  pad_token_id: 0
+  bos_token_id: 1
+  eos_token_id: 2
+  unk_token_id: 3
+
+preflight:
+  target_parameters: 100000
+  minimum_parameters: 1
+  maximum_parameters: 1000000
+
+smoke:
+  test_only: true
+  max_steps_default: 2
