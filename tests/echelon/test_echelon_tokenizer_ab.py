@@ -40,7 +40,7 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
 
 def test_piece_surface_byte_metric_handles_metaspace_and_byte_fallback() -> None:
     assert _piece_surface_bytes("<0xC3>") == 1
-    assert _piece_surface_bytes("▁Straße") == len(" Straße".encode("utf-8"))
+    assert _piece_surface_bytes("▁Straße") == len(" Straße".encode())
 
 
 def test_candidate_configs_match_report_metric_contract() -> None:
