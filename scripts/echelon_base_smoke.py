@@ -71,6 +71,12 @@ def save_checkpoint(
     return manifest_path
 
 
+def _nested_tuple(value: Any) -> Any:
+    if isinstance(value, list):
+        return tuple(_nested_tuple(item) for item in value)
+    return value
+
+
 def restore_checkpoint(
     directory: Path,
     *,
@@ -83,6 +89,10 @@ def restore_checkpoint(
     optimizer.load_state_dict(torch.load(directory / "optimizer.pt", weights_only=True))
     scheduler.load_state_dict(torch.load(directory / "scheduler.pt", weights_only=True))
     torch.set_rng_state(torch.load(directory / "torch_rng.pt", weights_only=True))
+    cuda_rng = directory / "cuda_rng.pt"
+    if cuda_rng.is_file() and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(torch.load(cuda_rng, weights_only=True))
+    random.setstate(_nested_tuple(state["python_random_state"]))
     return state
 
 
