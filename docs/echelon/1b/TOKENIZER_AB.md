@@ -24,7 +24,39 @@ Do not define "100M" by one candidate's tokenizer count and then give the other
 candidate different text. Assemble one fixed corpus, freeze its SHA-256, then
 train both candidates from that file.
 
+The shared-corpus assembler uses UTF-8 text bytes as a candidate-independent
+selection basis. The committed config records the intended 50-100M-token range,
+but the corpus is not claimed to satisfy that range until **both** trained
+tokenizers count the exact frozen corpus. This avoids circularly choosing the
+sample size with one candidate.
+
+Production mode reads the Garden v2 source registry and refuses every
+positive-share source whose `production_approved` gate is still false. Smoke
+mode exists only to test deterministic mechanics and marks its manifest as
+non-production.
+
 ## Commands
+
+After source-specific filtering has staged one JSONL file per Garden source
+(each record containing stable `id` and `text` fields), build the shared
+corpus:
+
+```bash
+python scripts/echelon_tokenizer_corpus.py \
+  --mode production \
+  --target-bytes <candidate-independent-byte-budget> \
+  --output-dir artifacts/echelon/1b/tokenizer-corpus \
+  --input de-fineweb2-hq=/path/de.jsonl \
+  --input en-fineweb-edu=/path/en.jsonl \
+  --input reference-knowledge=/path/reference.jsonl \
+  --input math-finemath=/path/math.jsonl \
+  --input code-stack-edu=/path/code.jsonl
+```
+
+The manifest records source/input hashes, byte quotas, selected-record-set hash,
+exact duplicate count, output corpus hash and whether the run was production
+eligible. Reordering identical staged records must not change the selected
+corpus bytes.
 
 Once the shared corpus exists:
 
