@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from scripts.echelon_tokenizer_ab import compare_reports, load_eval_records
+from scripts.echelon_tokenizer_ab import (
+    _piece_surface_bytes,
+    compare_reports,
+    load_eval_records,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -14,6 +18,9 @@ def _report(corpus: str, eval_sha: str, *, tokens_per_word: float) -> dict:
         "bytes_per_token": 3.0,
         "characters_per_token": 2.5,
         "byte_fallback_rate": 0.0,
+        "piece_surface_bytes_p95": 7,
+        "piece_surface_bytes_p99": 9,
+        "long_piece_rate_ge_8_bytes": 0.05,
         "roundtrip_failures": 0,
     }
     return {
@@ -31,6 +38,12 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
     assert {"de", "en", "code", "math"}.issubset({record["domain"] for record in records})
 
 
+
+def test_piece_surface_byte_metric_handles_metaspace_and_byte_fallback() -> None:
+    assert _piece_surface_bytes("<0xC3>") == 1
+    assert _piece_surface_bytes("▁Straße") == len(" Straße".encode("utf-8"))
+
+
 def test_candidate_configs_match_report_metric_contract() -> None:
     import yaml
 
@@ -39,6 +52,9 @@ def test_candidate_configs_match_report_metric_contract() -> None:
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         metrics = config["evaluation"]["metrics"]
         assert "tokens_per_word" in metrics
+        assert "piece_surface_bytes_p95" in metrics
+        assert "piece_surface_bytes_p99" in metrics
+        assert "long_piece_rate_ge_8_bytes" in metrics
         assert "words_per_token" not in metrics
 
 
