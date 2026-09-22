@@ -12,7 +12,6 @@ from pathlib import Path
 
 from scripts.echelon_unattended import run_guarded
 
-
 REQUIRED_KEYS = {
     "ECHELON_RUN_ID",
     "ECHELON_STATUS_PATH",
