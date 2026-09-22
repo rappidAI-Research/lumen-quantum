@@ -36,7 +36,7 @@ evaluation:
   metrics:
     - bytes_per_token
     - characters_per_token
-    - words_per_token
+    - tokens_per_word
     - byte_fallback_rate
     - roundtrip_failures
 
