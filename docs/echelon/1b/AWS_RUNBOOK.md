@@ -36,6 +36,22 @@ The following interfaces are required before the paid Base run:
 
 Names may change during implementation, but the behavior may not be dropped.
 
+Implemented building blocks now include:
+
+- `scripts/echelon_unattended.py`: non-interactive child-process guard with
+  persistent log/status, signal forwarding and a hard wall-time bound. It is
+  intended to run under systemd or an equivalent server-side supervisor.
+- `scripts/echelon_checkpoint_manifest.py`: hashes every local checkpoint file
+  and verifies the checkpoint before it may become externally recovery-valid.
+- `scripts/echelon_s3_checkpoint.py`: publishes verified checkpoint files to
+  private S3, verifies size/SHA-256 metadata and writes
+  `_RECOVERY_VALID.json` last.
+- `scripts/echelon_shard_stream.py`: memory-mapped uint16 token stream with an
+  exact sequence-aligned global resume offset.
+
+The final Base trainer still has to wire these components together before the
+large paid run.
+
 ## Machine-readable status
 
 Use `schemas/echelon-run-status.schema.json` and atomic writes. States are:
@@ -56,6 +72,11 @@ Before substantial H100 spend:
    continue correctly.
 
 Any failure blocks the large production run.
+
+For the real AWS test, install the cloud extra with
+`python -m pip install -e ".[ml,cloud]"`. S3 access must come from the EC2
+instance role; static AWS access keys must not be written to environment files,
+Git, logs or checkpoints.
 
 ## Cost safety
 
