@@ -51,6 +51,8 @@ preference-trained checkpoint exists yet.
   checkpoints and resumes the exact token offset from canonical uint16 shards.
 - CPU-safe SFT and DPO optimization smokes that prove post-training mechanics
   without pretending synthetic test tokens are production chat data.
+- Versioned systemd service template and strict non-shell entrypoint for
+  client-disconnect-safe server-side execution.
 
 ## Open decisions before freeze
 
@@ -63,8 +65,8 @@ preference-trained checkpoint exists yet.
 
 ## Next action
 
-Add the systemd deployment interface and wire the unattended guard, Base smoke,
-checkpoint integrity and S3 publisher into one end-to-end disconnect/recovery
-fixture. Then implement production chat-data validators and freeze the tokenizer
-A/B experiment inputs. No large H100 session is allowed before those recovery,
-data and post-training gates are green.
+Run the first end-to-end supervised disconnect/recovery acceptance test once
+bounded AWS capacity is available, and in parallel implement production chat-data
+validators plus the tokenizer A/B corpus/evaluation pipeline. No large H100
+session is allowed before recovery, tokenizer, source-review and post-training
+gates are green.

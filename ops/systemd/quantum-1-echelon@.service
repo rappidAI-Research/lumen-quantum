@@ -1,0 +1,22 @@
+[Unit]
+Description=Quantum 1 Echelon supervised run (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=echelon
+Group=echelon
+WorkingDirectory=/opt/rappidai/lumen-quantum
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/rappidai/lumen-quantum/.venv/bin/python scripts/echelon_systemd_entrypoint.py --env-file /etc/rappidai/quantum-1-echelon-%i.env
+Restart=no
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=180
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
