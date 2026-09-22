@@ -49,13 +49,19 @@ def run_sft_smoke(config_path: Path) -> float:
     return value
 
 
-def _response_logprob(model: LlamaForCausalLM, ids: torch.Tensor, prompt_tokens: int) -> torch.Tensor:
+def _response_logprob(
+    model: LlamaForCausalLM, ids: torch.Tensor, prompt_tokens: int
+) -> torch.Tensor:
     logits = model(input_ids=ids, use_cache=False).logits[:, :-1, :]
     targets = ids[:, 1:]
-    token_logprobs = F.log_softmax(logits, dim=-1).gather(
-        -1,
-        targets.unsqueeze(-1),
-    ).squeeze(-1)
+    token_logprobs = (
+        F.log_softmax(logits, dim=-1)
+        .gather(
+            -1,
+            targets.unsqueeze(-1),
+        )
+        .squeeze(-1)
+    )
     positions = torch.arange(targets.shape[1]).unsqueeze(0)
     mask = positions >= max(prompt_tokens - 1, 0)
     return (token_logprobs * mask).sum(dim=-1)
