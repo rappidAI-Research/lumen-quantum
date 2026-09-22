@@ -8,6 +8,7 @@ work is allowed to begin.
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 from typing import Any, cast
 
@@ -74,16 +75,62 @@ def validate_model(path: Path) -> list[str]:
     return problems
 
 
-def validate_sources() -> list[str]:
+def validate_sources(*, require_production_ready: bool = False) -> list[str]:
     data = load_yaml(CONFIG_ROOT / "sources.yaml")
     sources = data.get("sources", [])
     shares = [float(item["target_share"]) for item in sources]
     problems: list[str] = []
     if abs(sum(shares) - 1.0) > 1e-9:
         problems.append(f"sources.yaml: target shares sum to {sum(shares)}, expected 1.0")
+
+    source_ids = [str(item.get("id")) for item in sources]
+    if len(source_ids) != len(set(source_ids)):
+        problems.append("sources.yaml: source ids must be unique")
+
     for item in sources:
+        source_id = str(item.get("id"))
         if item.get("review_status") is None or item.get("terms_status") is None:
-            problems.append(f"sources.yaml: {item.get('id')} must expose review/terms status")
+            problems.append(f"sources.yaml: {source_id} must expose review/terms status")
+        if item.get("removal_status") is None:
+            problems.append(f"sources.yaml: {source_id} must expose removal status")
+        if not isinstance(item.get("production_approved"), bool):
+            problems.append(f"sources.yaml: {source_id} must expose boolean production_approved")
+
+        dataset = item.get("dataset")
+        revision = item.get("revision")
+        if dataset is not None:
+            if not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+                problems.append(
+                    f"sources.yaml: {source_id} identified dataset must pin a 40-hex revision"
+                )
+            evidence = item.get("evidence")
+            if not isinstance(evidence, dict):
+                problems.append(f"sources.yaml: {source_id} identified dataset needs evidence")
+            else:
+                for key in ("dataset_card", "license_metadata", "upstream_terms", "reviewed_at"):
+                    if not evidence.get(key):
+                        problems.append(
+                            f"sources.yaml: {source_id} evidence.{key} must be non-empty"
+                        )
+
+        if item.get("production_approved") is True:
+            if dataset is None:
+                problems.append(f"sources.yaml: {source_id} cannot be approved without a dataset")
+            if item.get("review_status") != "approved":
+                problems.append(
+                    f"sources.yaml: {source_id} approved source must have review_status=approved"
+                )
+            if item.get("terms_status") != "approved_for_project":
+                problems.append(
+                    f"sources.yaml: {source_id} approved source must have terms_status=approved_for_project"
+                )
+            if item.get("removal_status") != "ready":
+                problems.append(
+                    f"sources.yaml: {source_id} approved source must have removal_status=ready"
+                )
+
+        if require_production_ready and item.get("production_approved") is not True:
+            problems.append(f"sources.yaml: {source_id} is not production approved")
     return problems
 
 
@@ -180,11 +227,11 @@ def validate_training() -> list[str]:
     return problems
 
 
-def validate() -> list[str]:
+def validate(*, require_production_sources: bool = False) -> list[str]:
     problems: list[str] = []
     problems.extend(validate_model(CONFIG_ROOT / "model-32k.yaml"))
     problems.extend(validate_model(CONFIG_ROOT / "model-48k.yaml"))
-    problems.extend(validate_sources())
+    problems.extend(validate_sources(require_production_ready=require_production_sources))
     problems.extend(validate_garden())
     problems.extend(validate_training())
     return problems
@@ -194,8 +241,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate Quantum 1 Echelon 1B planning invariants."
     )
-    parser.parse_args()
-    problems = validate()
+    parser.add_argument(
+        "--require-production-sources",
+        action="store_true",
+        help="Fail until every Garden v2 source has explicit production approval.",
+    )
+    args = parser.parse_args()
+    problems = validate(require_production_sources=args.require_production_sources)
     if problems:
         for problem in problems:
             print(f"ERROR: {problem}")
