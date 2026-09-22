@@ -53,10 +53,12 @@ python scripts/echelon_tokenizer_corpus.py \
   --input code-stack-edu=/path/code.jsonl
 ```
 
-The manifest records source/input hashes, byte quotas, selected-record-set hash,
-exact duplicate count, output corpus hash and whether the run was production
-eligible. Reordering identical staged records must not change the selected
-corpus bytes.
+The manifest records config/source/input hashes, byte quotas,
+selected-record-set hash, exact duplicate count, output corpus hash and whether
+the run was production eligible. The assembler validates that its committed
+selection/deduplication contract matches the implementation before selecting
+records. Reordering identical staged records must not change the selected corpus
+bytes.
 
 Once the shared corpus exists:
 
@@ -84,8 +86,10 @@ The report records, overall and per domain:
 
 - bytes/token;
 - characters/token;
-- tokens/word;
+- tokens/word (including domain-specific code/math fertility);
 - byte-fallback token rate;
+- token-piece surface-byte p50/p95/p99 and maximum;
+- rate of token pieces at least 8 UTF-8 surface bytes long as a long-tail signal;
 - exact round-trip failures.
 
 The comparison refuses candidates trained on different corpus hashes or
