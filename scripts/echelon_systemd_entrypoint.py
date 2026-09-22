@@ -44,9 +44,7 @@ def load_env_file(path: Path) -> dict[str, str]:
         raise ValueError(f"missing required environment keys: {', '.join(missing)}")
     unexpected = sorted(set(values).difference(REQUIRED_KEYS))
     if unexpected:
-        raise ValueError(
-            "unexpected environment keys are forbidden: " + ", ".join(unexpected)
-        )
+        raise ValueError("unexpected environment keys are forbidden: " + ", ".join(unexpected))
     return values
 
 
