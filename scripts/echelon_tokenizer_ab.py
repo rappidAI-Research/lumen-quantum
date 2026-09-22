@@ -8,11 +8,11 @@ round-trip evidence. It deliberately does not auto-freeze a winner.
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict
 import hashlib
 import json
-import re
-from collections import defaultdict
 from pathlib import Path
+import re
 from typing import Any
 
 import sentencepiece as spm
