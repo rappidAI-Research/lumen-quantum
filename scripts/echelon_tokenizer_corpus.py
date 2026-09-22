@@ -108,7 +108,9 @@ def _byte_quotas(sources: dict[str, dict[str, Any]], target_bytes: int) -> dict[
         for source_id, value in exact.items()
     }
     remainder = target_bytes - sum(quotas.values())
-    order = sorted(sources, key=lambda source_id: (-(exact[source_id] - quotas[source_id]), source_id))
+    order = sorted(
+        sources, key=lambda source_id: (-(exact[source_id] - quotas[source_id]), source_id)
+    )
     for source_id in order[:remainder]:
         quotas[source_id] += 1
     if sum(quotas.values()) != target_bytes:
