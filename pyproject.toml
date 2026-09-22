@@ -27,6 +27,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cloud = [
+  "boto3>=1.35,<2",
+]
 ml = [
   "accelerate>=0.34,<2",
   "datasets>=2.20,<6",
