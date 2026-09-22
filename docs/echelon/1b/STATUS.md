@@ -39,7 +39,12 @@ preference-trained checkpoint exists yet.
   artifact/config SHA-256 manifests, reserved special-token ID checks, fixed
   domain-tagged evaluation evidence and comparison reports. The real shared
   production tokenizer corpus is not assembled yet and no candidate is frozen.
-- Garden v2 planning, source registry and Base/SFT/DPO execution contracts.
+- Garden v2 planning plus a machine-readable source-readiness gate. Immutable
+  candidate revisions and public terms/provenance evidence are captured for
+  FineWeb2-HQ, FineWeb-Edu, FineMath-4+ and Stack-Edu, while every source remains
+  explicitly unapproved for production pending the required human terms/rights
+  decision and removal workflow.
+- Base/SFT/DPO execution contracts.
 - AWS runtime/budget contract and unattended-operation runbook.
 - Machine-readable run status with atomic updates.
 - Deterministic memory-mapped uint16 shard stream with exact sequence-aligned
@@ -61,16 +66,19 @@ preference-trained checkpoint exists yet.
 
 1. 32K/21-layer vs 48K/20-layer tokenizer/model candidate.
 2. RoPE base after a bounded local/cheap ablation.
-3. Exact immutable revisions and rights/terms review for every Garden v2 source.
+3. Final Garden v2 source approval: reference/knowledge source selection plus
+   human rights/terms/removal decisions for every source.
 4. Final Base learning-rate schedule after the short LR sweep.
 5. Final SFT and preference datasets/hyperparameters after Base evaluation.
 6. AWS region and Spot/On-Demand choice after quota, capacity and price checks.
 
 ## Next action
 
-Next, harden the Garden v2 source registry with immutable revision/provenance
-evidence and explicit unresolved rights/removal gates, then implement the
-deterministic shared tokenizer-corpus assembler and complete the real 32K/48K
-A/B evidence. In parallel, keep production chat-data validation and the bounded
-disconnect/recovery acceptance path ready. No large H100 session is allowed
-before recovery, tokenizer, source-review and post-training gates are green.
+Next, implement the deterministic shared tokenizer-corpus assembler so both
+32K/48K candidates can consume identical approved source bytes, including a
+production mode that refuses any source whose registry gate is still closed.
+Then complete the real tokenizer A/B evidence once the necessary source
+approvals/data are available. In parallel, keep production chat-data validation
+and the bounded disconnect/recovery acceptance path ready. No large H100 session
+is allowed before recovery, tokenizer, source-review and post-training gates are
+green.
