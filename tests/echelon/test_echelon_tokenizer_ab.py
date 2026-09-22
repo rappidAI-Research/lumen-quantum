@@ -31,7 +31,6 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
     assert {"de", "en", "code", "math"}.issubset({record["domain"] for record in records})
 
 
-
 def test_candidate_configs_match_report_metric_contract() -> None:
     import yaml
 
