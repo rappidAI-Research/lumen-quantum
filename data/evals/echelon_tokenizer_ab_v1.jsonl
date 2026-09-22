@@ -1,0 +1,10 @@
+{"domain":"de","text":"Berlin ist die Hauptstadt Deutschlands. Gute Sprachmodelle müssen deutsche Grammatik, Umlaute, zusammengesetzte Wörter und unterschiedliche Schreibstile zuverlässig verarbeiten."}
+{"domain":"de","text":"Straßenverkehr, Fußballübertragung, Größenordnung, Überprüfung und künstliche Intelligenz enthalten Zeichenfolgen, die bei einem deutschen Tokenizer nicht unnötig zerfallen sollten."}
+{"domain":"en","text":"A compact language model should preserve useful English capability while remaining strongly optimized for German text."}
+{"domain":"code","text":"def mean(values: list[float]) -> float:\n    return sum(values) / len(values)"}
+{"domain":"code","text":"const result = items.filter(x => x.active).map(x => ({ id: x.id, score: x.score }));"}
+{"domain":"math","text":"Für x ∈ ℝ gilt: Wenn f(x)=x²+2x+1, dann ist f(x)=(x+1)² und die einzige Nullstelle liegt bei x=-1."}
+{"domain":"math","text":"A matrix A ∈ ℝ^{n×n} is invertible exactly when det(A) ≠ 0; numerical implementations should still consider conditioning."}
+{"domain":"structured","text":"{\"model\":\"quantum-1-echelon\",\"context_length\":4096,\"stage\":\"base\"}"}
+{"domain":"chat","text":"<|system|>\nDu bist ein hilfreicher Assistent.<|end|>\n<|user|>\nErkläre Photosynthese einfach.<|end|>\n<|assistant|>\nPflanzen wandeln Lichtenergie in chemische Energie um.<|end|>"}
+{"domain":"unicode","text":"Unicode: café, naïve, İstanbul, 東京, Москва, 😀 🚀 🧠 — Deutsch: äöü ÄÖÜ ß."}
