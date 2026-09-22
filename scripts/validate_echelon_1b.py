@@ -125,8 +125,15 @@ def validate_training() -> list[str]:
     problems: list[str] = []
 
     milestones = [int(value) for value in base["milestones_tokens"]]
-    required = [100_000_000, 1_000_000_000, 5_000_000_000, 10_000_000_000,
-                20_000_000_000, 30_000_000_000, 40_000_000_000]
+    required = [
+        100_000_000,
+        1_000_000_000,
+        5_000_000_000,
+        10_000_000_000,
+        20_000_000_000,
+        30_000_000_000,
+        40_000_000_000,
+    ]
     if milestones != required:
         problems.append("train-base.yaml: milestone sequence does not match the masterplan")
     if base["runtime"].get("client_disconnect_safe") is not True:
@@ -154,8 +161,13 @@ def validate_training() -> list[str]:
         problems.append("runtime-aws.yaml: private overage must remain disabled")
 
     execution = runtime["execution"]
-    for key in ("client_disconnect_safe", "non_interactive", "persistent_logs",
-                "machine_readable_status", "resume_latest_required"):
+    for key in (
+        "client_disconnect_safe",
+        "non_interactive",
+        "persistent_logs",
+        "machine_readable_status",
+        "resume_latest_required",
+    ):
         if execution.get(key) is not True:
             problems.append(f"runtime-aws.yaml: execution.{key} must be true")
 
