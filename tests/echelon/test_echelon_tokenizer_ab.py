@@ -33,12 +33,16 @@ def test_eval_corpus_is_structured_and_nonempty() -> None:
 
 def test_compare_requires_identical_training_corpus() -> None:
     with pytest.raises(ValueError, match="same training corpus"):
-        compare_reports(_report("a", "eval", tokens_per_word=1.0), _report("b", "eval", tokens_per_word=0.9))
+        compare_reports(
+            _report("a", "eval", tokens_per_word=1.0), _report("b", "eval", tokens_per_word=0.9)
+        )
 
 
 def test_compare_requires_identical_evaluation_corpus() -> None:
     with pytest.raises(ValueError, match="same evaluation corpus"):
-        compare_reports(_report("same", "a", tokens_per_word=1.0), _report("same", "b", tokens_per_word=0.9))
+        compare_reports(
+            _report("same", "a", tokens_per_word=1.0), _report("same", "b", tokens_per_word=0.9)
+        )
 
 
 def test_compare_reports_deltas_without_auto_freezing() -> None:
